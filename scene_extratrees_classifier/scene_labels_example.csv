@@ -1,0 +1,5 @@
+image,scene,sensor
+images/ir-air/000001.png,air,ir
+images/ir-sea/000002.png,sea,ir
+images/sar-urban/000003.png,urban,sar
+images/sar-forest/000004.png,forest,sar
