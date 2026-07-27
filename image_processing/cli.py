@@ -11,9 +11,9 @@ ROOT = Path(__file__).resolve().parents[1]
 COMMANDS: dict[str, tuple[str, ...]] = {
     "audit": ("-m", "image_processing.analyze_and_prepare"),
     "features": ("-m", "image_processing.feature_engineering", "extract"),
-    "crops": ("-m", "scene_recognition.target_classifier_module.prepare_crops"),
-    "detection": ("-m", "scene_recognition.detector_module.prepare_detection_dataset"),
-    "comparison": ("-m", "scene_recognition.detector_module.prepare_comparison_dataset"),
+    "crops": ("-m", "image_processing.prepare_crops"),
+    "detection": ("-m", "image_processing.prepare_detection_dataset"),
+    "comparison": ("-m", "image_processing.prepare_comparison_dataset"),
 }
 
 

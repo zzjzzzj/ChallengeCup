@@ -14,11 +14,12 @@ from flask import Flask, jsonify, render_template, request
 from PIL import Image, UnidentifiedImageError
 
 from image_processing.feature_engineering import extract_image
-from feature_infer import selected_feature_values
+from scene_recognition.feature_infer import selected_feature_values
 
 
 BASE_DIR = Path(__file__).resolve().parent
-RUN_DIR = BASE_DIR / "runs" / "feature_baseline"
+PROJECT_ROOT = BASE_DIR.parent
+RUN_DIR = PROJECT_ROOT / "scene_recognition" / "runs" / "feature_baseline"
 ARTIFACTS_DIR = BASE_DIR / "artifacts"
 
 SCENE_LABELS = {

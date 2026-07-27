@@ -6,7 +6,7 @@ from pathlib import Path
 
 import yaml
 
-from scene_recognition.detector_module.prepare_comparison_dataset import prepare_comparison_dataset
+from image_processing.prepare_comparison_dataset import prepare_comparison_dataset
 
 
 class PrepareComparisonDatasetTests(unittest.TestCase):

@@ -50,6 +50,10 @@ runs/
 *.pdf
 *.png
 *.pt
+*.pth
+*.ckpt
+*.engine
+*.log
 *.tif
 *.tiff
 *.zip

@@ -7,7 +7,7 @@ from pathlib import Path
 from scene_recognition.detector_module.dataset import prepare_detection_dataset
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> None:

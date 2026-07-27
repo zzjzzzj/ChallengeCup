@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 COMMANDS: dict[str, tuple[str, ...]] = {
-    "train-features": ("-m", "image_processing.feature_engineering", "evaluate"),
+    "train-features": ("-m", "scene_recognition.feature_classifier"),
     "train-cnn": ("-m", "scene_recognition.train_scene_classifier"),
     "infer": ("-m", "scene_recognition.feature_infer"),
     "dashboard": ("-m", "image_processing.feature_web_app"),

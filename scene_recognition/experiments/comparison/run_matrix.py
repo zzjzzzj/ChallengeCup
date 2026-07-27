@@ -62,22 +62,6 @@ def _resnet_crop(init: str, epochs: int, seed: int, output_root: Path) -> Experi
     return Experiment(name, "crop", "resnet18", init, epochs, seed, argv)
 
 
-def _yolo_crop(init: str, epochs: int, seed: int, output_root: Path) -> Experiment:
-    name = f"crop__yolov8ncls__{init}__e{epochs}__s{seed}"
-    out = output_root / name
-    argv = [
-        "-m", "scene_recognition.target_classifier_module.train_yolo_cls",
-        "--epochs", str(epochs),
-        "--batch-size", "32",
-        "--image-size", "224",
-        "--seed", str(seed),
-        "--output", str(out),
-    ]
-    if init == "scratch":
-        argv.append("--no-pretrained")
-    return Experiment(name, "crop", "yolov8n-cls", init, epochs, seed, argv)
-
-
 def _resnet_whole(init: str, epochs: int, seed: int, output_root: Path) -> Experiment:
     name = f"whole__resnet18__{init}__e{epochs}__s{seed}"
     out = output_root / name
@@ -132,7 +116,6 @@ def build_matrix(
             if "crop" in tracks:
                 for epochs in (12, 60):
                     matrix.append(_resnet_crop(init, epochs, seed, output_root))
-                    matrix.append(_yolo_crop(init, epochs, seed, output_root))
             if "whole" in tracks:
                 for epochs in (12, 40):
                     matrix.append(_resnet_whole(init, epochs, seed, output_root))
@@ -206,7 +189,7 @@ def main() -> None:
     parser.add_argument(
         "--models",
         default="",
-        help="逗号分隔的模型名过滤，留空表示全部；例如 resnet18 或 yolov8n-cls",
+        help="逗号分隔的模型名过滤，留空表示全部；例如 resnet18 或 yolov8n",
     )
     parser.add_argument(
         "--epochs-filter",

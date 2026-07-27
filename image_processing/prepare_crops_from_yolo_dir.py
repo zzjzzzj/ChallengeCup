@@ -1,6 +1,6 @@
 """从标准YOLO目录（images/{split} + labels/{split}）生成ResNet18目标裁剪数据。
 
-与 prepare_crops.py 的区别：后者依赖 scene_module 的 scene_index.csv（标签与原图同目录），
+与 prepare_crops.py 的区别：后者依赖 image_processing 的 scene_index.csv（标签与原图同目录），
 而增广数据集使用 images/labels 分离的标准YOLO布局，因此单独提供本入口。
 裁剪逻辑、padding 与 manifest 字段与 prepare_crops.py 保持一致，保证可比性。
 """

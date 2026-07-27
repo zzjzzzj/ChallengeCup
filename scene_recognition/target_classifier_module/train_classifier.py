@@ -18,7 +18,7 @@ def main() -> None:
     parser.add_argument(
         "--manifest",
         type=Path,
-        default=Path("scene_recognition/target_classifier_module/artifacts/target_crops/manifest.csv"),
+        default=Path("image_processing/artifacts/target_crops/manifest.csv"),
     )
     parser.add_argument(
         "--output",

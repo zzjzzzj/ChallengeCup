@@ -20,7 +20,7 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("scene_recognition/target_classifier_module/artifacts/target_crops"),
+        default=Path("image_processing/artifacts/target_crops"),
     )
     parser.add_argument(
         "--padding-ratio",

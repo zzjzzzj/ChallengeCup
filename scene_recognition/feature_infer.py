@@ -10,8 +10,7 @@ import pandas as pd
 from image_processing.feature_engineering import SCENES, extract_one
 
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-DEFAULT_RUN_DIR = SCRIPT_DIR / "runs" / "feature_baseline"
+DEFAULT_RUN_DIR = Path(__file__).resolve().parent / "runs" / "feature_baseline"
 
 
 def selected_feature_values(
