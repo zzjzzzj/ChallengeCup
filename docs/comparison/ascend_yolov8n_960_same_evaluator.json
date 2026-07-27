@@ -1,0 +1,52 @@
+{
+  "evaluator": "detector_module.resnet18_detector.detection_metrics (COCO-style 101-point AP)",
+  "test_images": 76,
+  "data": "C:\\Users\\10642\\Desktop\\挑战杯\\ChallengeCup\\detector_module\\configs\\data_clean_aug.yaml",
+  "runs": {
+    "ascend_yolov8n_960_aug_pretrained": {
+      "checkpoint": "C:\\Users\\10642\\Desktop\\挑战杯\\ChallengeCup\\detector_module\\runs\\ascend_yolov8n_960_aug_pretrained\\weights\\best.pt",
+      "metrics": {
+        "confidence_threshold": 0.25,
+        "precision": 0.7708978328173375,
+        "recall": 0.9021739130434783,
+        "map50": 0.8789083981718072,
+        "map50_95": 0.4447002438933577,
+        "map75": 0.41265053434084775,
+        "per_class": {
+          "soldier": {
+            "support": 63,
+            "precision": 0.5540540540540541,
+            "recall": 0.6507936507936508,
+            "map50": 0.6009647515618888,
+            "map75": 0.09155498400440833,
+            "map50_95": 0.21895072710166263
+          },
+          "small_aircraft": {
+            "support": 70,
+            "precision": 1.0,
+            "recall": 1.0,
+            "map50": 1.0,
+            "map75": 0.5342929611503671,
+            "map50_95": 0.524524158271258
+          },
+          "warship": {
+            "support": 57,
+            "precision": 0.9827586206896551,
+            "recall": 1.0,
+            "map50": 0.99965858654831,
+            "map75": 0.6626476820848525,
+            "map50_95": 0.6006099317008272
+          },
+          "tank": {
+            "support": 86,
+            "precision": 0.6694214876033058,
+            "recall": 0.9418604651162791,
+            "map50": 0.9150102545770303,
+            "map75": 0.36210651012376305,
+            "map50_95": 0.43471615849968315
+          }
+        }
+      }
+    }
+  }
+}
