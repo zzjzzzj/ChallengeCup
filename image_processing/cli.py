@@ -9,11 +9,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 COMMANDS: dict[str, tuple[str, ...]] = {
-    "audit": ("-m", "scene_module.analyze_and_prepare"),
-    "features": ("-m", "scene_module.feature_engineering", "extract"),
-    "crops": ("-m", "target_classifier_module.prepare_crops"),
-    "detection": ("-m", "detector_module.prepare_detection_dataset"),
-    "comparison": ("-m", "detector_module.prepare_comparison_dataset"),
+    "audit": ("-m", "image_processing.analyze_and_prepare"),
+    "features": ("-m", "image_processing.feature_engineering", "extract"),
+    "crops": ("-m", "scene_recognition.target_classifier_module.prepare_crops"),
+    "detection": ("-m", "scene_recognition.detector_module.prepare_detection_dataset"),
+    "comparison": ("-m", "scene_recognition.detector_module.prepare_comparison_dataset"),
 }
 
 

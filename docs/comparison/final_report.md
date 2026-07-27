@@ -156,7 +156,7 @@ soldier 即便在最优组合下也只有 mAP50 62.66% / 召回 58.27%，**仍�
    八组协议完全一致，横向差值仍然可信。YOLOv8n 一侧统一在 val 上评测，不受此影响。
 
 3. **表 1 与表 2 不可横向比较**。ResNet18 的定位由真值框白送，YOLOv8n 必须自己找到目标再分类，
-   两者口径不同。要同口径比较需运行 `detector_module/gt_box_classification.py`。
+   两者口径不同。要同口径比较需运行 `scene_recognition/detector_module/gt_box_classification.py`。
 
 4. **YOLO 两组的在线增广完全相同**（mosaic 0.6、fliplr 0.5、scale 0.20 等在两组均开启且参数一致）。
    因此"增广 vs 原始"量的是**离线增广在在线增广之上的增量**，会小于离线增广的全部价值。
@@ -186,8 +186,8 @@ soldier 即便在最优组合下也只有 mAP50 62.66% / 召回 58.27%，**仍�
 | 自动汇总表 | `docs/comparison/comparison_report.md` |
 | 汇总 CSV | `docs/comparison/comparison_results.csv` |
 | 运行日志 | `docs/comparison/run_log.json`、`docs/comparison/logs/*.log` |
-| ResNet18 权重与曲线 | `target_classifier_module/runs/cmp_resnet18_*/` |
-| YOLOv8n 权重与曲线 | `detector_module/runs/cmp_yolov8n_*/` |
+| ResNet18 权重与曲线 | `scene_recognition/target_classifier_module/runs/cmp_resnet18_*/` |
+| YOLOv8n 权重与曲线 | `scene_recognition/detector_module/runs/cmp_yolov8n_*/` |
 
 各组耗时：ResNet18 原始 5.1 / 5.3 分钟，ResNet18 增广 31.2 / 32.1 分钟，
 YOLOv8n 原始 7.1 / 17.5 分钟，YOLOv8n 增广 52.8 / 56.6 分钟。

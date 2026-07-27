@@ -12,7 +12,7 @@ ResNet18 已不再以裁剪图分类器参与对比，而是以 **Faster R-CNN +
 - ResNet18 模型：Faster R-CNN + ResNet18-FPN，输入长边缩放到 640，预测小目标锚框为 8/16/32/64/128 像素。
 - ResNet18 预训练：ImageNet；从零组不加载任何权重。YOLO 组使用既有的四个 `best.pt` 权重。
 - 原始集训练上限 40 轮；增广集训练 6 轮，使两种训练集的总优化步数接近，避免将 7.4 倍样本量误报为纯粹的增广收益。
-- 所有表中 mAP 均由 `detector_module.resnet18_detector.detection_metrics` 计算：IoU 0.50 的 mAP@0.5，以及 0.50--0.95 的 COCO 风格平均值。
+- 所有表中 mAP 均由 `scene_recognition.detector_module.resnet18_detector.detection_metrics` 计算：IoU 0.50 的 mAP@0.5，以及 0.50--0.95 的 COCO 风格平均值。
 
 ## 总体结果
 
@@ -50,6 +50,6 @@ ResNet18 已不再以裁剪图分类器参与对比，而是以 **Faster R-CNN +
 
 ## 产物
 
-- ResNet18 检测指标：`detector_module/runs/cmp8_resnet18det_*/metrics.json`
+- ResNet18 检测指标：`scene_recognition/detector_module/runs/cmp8_resnet18det_*/metrics.json`
 - YOLO 同口径指标：`docs/comparison/yolo_clean8_same_evaluator.json`
 - ResNet18 训练日志：`docs/comparison/logs/cmp8_resnet18det_*.log`

@@ -87,7 +87,7 @@ ImageNet预训练ResNet18
 
 ### 4.1 总体结果
 
-产物：`target_classifier_module/runs/resnet18_whole_image_fixed_selection_none/`
+产物：`scene_recognition/target_classifier_module/runs/resnet18_whole_image_fixed_selection_none/`
 
 | 指标 | 修正前（第1轮） | 修正后（第8轮） |
 |---|---:|---:|
@@ -138,10 +138,10 @@ ImageNet预训练ResNet18
 复现：
 
 ```powershell
-python -m target_classifier_module.diagnose_shortcut `
-  --manifest-dir detector_module/artifacts/detection_dataset/manifests `
-  --checkpoint target_classifier_module/runs/resnet18_whole_image_fixed_selection_none/best.pt `
-  --output target_classifier_module/runs/shortcut_diagnosis
+python -m scene_recognition.target_classifier_module.diagnose_shortcut `
+  --manifest-dir scene_recognition/detector_module/artifacts/detection_dataset/manifests `
+  --checkpoint scene_recognition/target_classifier_module/runs/resnet18_whole_image_fixed_selection_none/best.pt `
+  --output scene_recognition/target_classifier_module/runs/shortcut_diagnosis
 ```
 
 ## 6. 对照实验

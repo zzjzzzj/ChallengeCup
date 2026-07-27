@@ -11,18 +11,20 @@ ROOT = Path(__file__).resolve().parent
 COMMANDS: dict[str, tuple[str, ...]] = {
     "image-processing": ("-m", "image_processing.cli"),
     "scene-recognition": ("-m", "scene_recognition.cli"),
-    "scene-prepare": ("-m", "scene_module.analyze_and_prepare"),
-    "scene-extract": ("-m", "scene_module.feature_engineering", "extract"),
-    "scene-evaluate": ("-m", "scene_module.feature_engineering", "evaluate"),
-    "crop-prepare": ("-m", "target_classifier_module.prepare_crops"),
-    "crop-classifier": ("-m", "target_classifier_module.train_classifier"),
-    "whole-classifier": ("-m", "target_classifier_module.train_whole_image"),
-    "prepare-detection": ("-m", "detector_module.prepare_detection_dataset"),
-    "prepare-comparison": ("-m", "detector_module.prepare_comparison_dataset"),
-    "yolo": ("-m", "detector_module.train_detector_ablation"),
-    "resnet-detector": ("-m", "detector_module.resnet18_detector"),
-    "detection-matrix": (str(ROOT / "run_detection_experiments.py"),),
-    "yolo-evaluate": ("-m", "detector_module.evaluate_yolo_same_protocol"),
+    "scene-prepare": ("-m", "image_processing.analyze_and_prepare"),
+    "scene-extract": ("-m", "image_processing.feature_engineering", "extract"),
+    "scene-evaluate": ("-m", "image_processing.feature_engineering", "evaluate"),
+    "crop-prepare": ("-m", "scene_recognition.target_classifier_module.prepare_crops"),
+    "crop-classifier": ("-m", "scene_recognition.target_classifier_module.train_classifier"),
+    "whole-classifier": ("-m", "scene_recognition.target_classifier_module.train_whole_image"),
+    "prepare-detection": ("-m", "scene_recognition.detector_module.prepare_detection_dataset"),
+    "prepare-comparison": ("-m", "scene_recognition.detector_module.prepare_comparison_dataset"),
+    "yolo": ("-m", "scene_recognition.detector_module.train_detector_ablation"),
+    "resnet-detector": ("-m", "scene_recognition.detector_module.resnet18_detector"),
+    "detection-matrix": (
+        str(ROOT / "scene_recognition" / "experiments" / "run_detection_experiments.py"),
+    ),
+    "yolo-evaluate": ("-m", "scene_recognition.detector_module.evaluate_yolo_same_protocol"),
 }
 
 

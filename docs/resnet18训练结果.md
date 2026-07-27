@@ -428,7 +428,7 @@ YOLOv8结果包含定位错误、漏检、误检和分类错误。其mAP不能�
    且必须多种子、报告均值±标准差；否则结论落在噪声内。
 7. 针对IR海面数据训练或微调独立IR专家。
 8. 接入持续学习与抗遗忘实验——赛题核心是“时变场景的快速学习”，
-   `detector_module/configs/incremental_protocol.json` 已有协议但尚未跑通，这是当前差距最大的一块。
+   `scene_recognition/detector_module/configs/incremental_protocol.json` 已有协议但尚未跑通，这是当前差距最大的一块。
 9. 在昇腾310B上完成ONNX转OM、精度核对和FPS测试。
 
 ## 10. 最终结论

@@ -1,10 +1,10 @@
 {
-  "evaluator": "detector_module.resnet18_detector.detection_metrics (COCO-style 101-point AP)",
+  "evaluator": "scene_recognition.detector_module.resnet18_detector.detection_metrics (COCO-style 101-point AP)",
   "test_images": 76,
-  "data": "C:\\Users\\10642\\Desktop\\挑战杯\\ChallengeCup\\detector_module\\configs\\data_clean_aug.yaml",
+  "data": "scene_recognition/detector_module/artifacts/comparison_dataset/data_aug.yaml",
   "runs": {
     "ascend_yolov8n_960_aug_pretrained": {
-      "checkpoint": "C:\\Users\\10642\\Desktop\\挑战杯\\ChallengeCup\\detector_module\\runs\\ascend_yolov8n_960_aug_pretrained\\weights\\best.pt",
+      "checkpoint": "scene_recognition/detector_module/runs/ascend_yolov8n_960_aug_pretrained/weights/best.pt",
       "metrics": {
         "confidence_threshold": 0.25,
         "precision": 0.7708978328173375,

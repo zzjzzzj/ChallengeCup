@@ -23,7 +23,7 @@
 ## 整图ResNet18主结果
 
 以下为**修正选择规则后**（同分时取验证集loss更低者，选中第8轮）的结果，
-产物 `target_classifier_module/runs/resnet18_whole_image_fixed_selection_none/`：
+产物 `scene_recognition/target_classifier_module/runs/resnet18_whole_image_fixed_selection_none/`：
 
 | 类别 | F1 |
 |---|---:|
@@ -100,6 +100,6 @@ YOLOv8指标同时包含定位、漏检、误检和分类错误。当项目需�
 
 ## 指标来源
 
-- 整图：`target_classifier_module/runs/resnet18_whole_image_baseline_none/metrics.json`
-- 裁剪分类：`target_classifier_module/runs/resnet18_target_baseline_none/metrics.json`
-- 完整检测：`detector_module/runs/yolov8n_reference_overall/slice_metrics.json`
+- 整图：`scene_recognition/target_classifier_module/runs/resnet18_whole_image_baseline_none/metrics.json`
+- 裁剪分类：`scene_recognition/target_classifier_module/runs/resnet18_target_baseline_none/metrics.json`
+- 完整检测：`scene_recognition/detector_module/runs/yolov8n_reference_overall/slice_metrics.json`

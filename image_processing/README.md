@@ -21,16 +21,16 @@ python -m image_processing.cli --help
 
 ```powershell
 python -m image_processing.cli audit `
-  --dataset "D:\datasets\datasets_r1_base_train" `
-  --output scene_module/artifacts
+  --dataset "$env:SCENE_DATASET" `
+  --output image_processing/artifacts
 
 python -m image_processing.cli features `
-  --index scene_module/artifacts/scene_index.csv `
-  --output scene_module/artifacts/scene_features.csv
+  --index image_processing/artifacts/scene_index.csv `
+  --output image_processing/artifacts/scene_features.csv
 
 python -m image_processing.cli comparison `
-  --dataset-root "D:\datasets\yolo_augmented" `
-  --output detector_module/artifacts/comparison_dataset
+  --dataset-root "$env:AUGMENTED_DATASET" `
+  --output scene_recognition/detector_module/artifacts/comparison_dataset
 ```
 
 所有生成数据均写入已被 `.gitignore` 排除的 `artifacts/` 目录，只保留在本机。

@@ -61,9 +61,9 @@
 
 ### 2.3 数据来源
 
-增广数据集位于 `E:\yolo_augmented`，由离线增广脚本生成（见该目录下
+增广数据集位于团队本地数据根目录，由离线增广脚本生成（见该目录下
 `图像增强处理流程说明.txt` 与 `augmentation_manifest.csv`）。
-裁剪由 `target_classifier_module/prepare_crops_from_yolo_dir.py` 生成，
+裁剪由 `scene_recognition/target_classifier_module/prepare_crops_from_yolo_dir.py` 生成，
 padding_ratio = 0.1，缺失标签数 0。
 
 ---
@@ -182,7 +182,7 @@ YOLOv8n 第 26 轮达到最佳（从零需 113 轮，慢 4.3 倍）。
 
 4. **两个模型的指标不可横向比较。** ResNet18 的定位由真值框白送，
    YOLOv8n 必须自己找到目标再分类。要同口径比较需运行
-   `detector_module/gt_box_classification.py`。
+   `scene_recognition/detector_module/gt_box_classification.py`。
 
 ---
 
@@ -210,5 +210,5 @@ Windows 用 spawn 起 worker、每轮重建一遍，单个 worker 光 import tor
 | 汇总 CSV | `docs/comparison/comparison_results.csv` |
 | YOLO 分场景原始指标 | `docs/comparison/yolo_scene_metrics.json` |
 | 运行日志 | `docs/comparison/run_log.json`、`docs/comparison/logs/*.log` |
-| ResNet18 权重与曲线 | `target_classifier_module/runs/cmp_resnet18_*/` |
-| YOLOv8n 权重与曲线 | `detector_module/runs/cmp_yolov8n_*/` |
+| ResNet18 权重与曲线 | `scene_recognition/target_classifier_module/runs/cmp_resnet18_*/` |
+| YOLOv8n 权重与曲线 | `scene_recognition/detector_module/runs/cmp_yolov8n_*/` |

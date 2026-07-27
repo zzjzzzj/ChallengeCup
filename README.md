@@ -24,22 +24,22 @@
 
 ```text
 ChallengeCup/
-├─ train.py                              # 统一训练与数据准备入口
-├─ run_detection_experiments.py          # 最终八组端到端检测调度器
-├─ image_processing/                     # 图像审计、特征提取和数据准备入口
-├─ scene_recognition/                    # 场景训练、推理和可视化入口
-├─ scene_module/                         # 场景数据审计、特征提取、训练与推理
-├─ target_classifier_module/             # ResNet18裁剪分类与历史整图存在判断
-├─ detector_module/                      # YOLOv8n和ResNet18-FPN检测
-│  ├─ prepare_comparison_dataset.py      # 生成最终原始/增广对比协议
-│  ├─ train_detector_ablation.py         # 单组YOLOv8n训练
-│  ├─ resnet18_detector.py               # 单组ResNet18-FPN训练
-│  └─ evaluate_yolo_same_protocol.py     # YOLO同评测器复算
-├─ docs/                                 # 实验记录、诊断和结果报告
-└─ requirements.txt                      # Python依赖，PyTorch除外
+├─ train.py                                  # 统一训练与数据准备入口
+├─ image_processing/                         # 图像审计、预处理、特征与裁剪数据准备
+│  ├─ analyze_and_prepare.py                 # 数据检查、索引与划分
+│  ├─ feature_engineering.py                 # 场景图像特征提取
+│  └─ feature_web_app.py                     # 本地特征分析台
+├─ scene_recognition/                        # 主要训练、评估与推理代码
+│  ├─ train_scene_classifier.py              # 场景分类模型训练
+│  ├─ feature_infer.py                       # 场景识别推理
+│  ├─ target_classifier_module/              # ResNet18目标切片分类
+│  ├─ detector_module/                       # YOLOv8与ResNet18-FPN目标检测
+│  └─ experiments/                           # 原始/增广等实验矩阵与结果汇总
+├─ docs/                                     # 实验记录、数据分类和脱敏结果
+└─ requirements.txt                          # Python依赖，PyTorch除外
 ```
 
-根目录旧脚本 `run_comparison_experiments.py` 保留早期 155 张验证集协议，用于复现历史实验；新的正式检测实验请使用 `run_detection_experiments.py` 或 `python train.py detection-matrix`。
+仓库以场景识别训练为主。`image_processing/` 只负责训练前的数据与图像处理；ResNet18、YOLOv8、目标切片分类、端到端检测和实验调度统一放在 `scene_recognition/`。正式八组检测实验使用 `python train.py detection-matrix`，底层调度器位于 `scene_recognition/experiments/run_detection_experiments.py`。
 
 ## 环境安装
 
@@ -90,24 +90,24 @@ yolo_augmented/
 
 ```powershell
 python train.py scene-prepare `
-  --dataset "D:\datasets\datasets_r1_base_train" `
-  --output scene_module/artifacts
+  --dataset "$env:SCENE_DATASET" `
+  --output image_processing/artifacts
 ```
 
 ### 2. 特征提取
 
 ```powershell
 python train.py scene-extract `
-  --index scene_module/artifacts/scene_index.csv `
-  --output scene_module/artifacts/scene_features.csv
+  --index image_processing/artifacts/scene_index.csv `
+  --output image_processing/artifacts/scene_features.csv
 ```
 
 ### 3. 特征消融与最终模型训练
 
 ```powershell
 python train.py scene-evaluate `
-  --features scene_module/artifacts/scene_features.csv `
-  --output scene_module/runs/feature_eval_report
+  --features image_processing/artifacts/scene_features.csv `
+  --output image_processing/runs/feature_eval_report
 ```
 
 输出包括 `feature_ablation.csv`、`model_metadata.json`、混淆矩阵、预测明细和 `scene_feature_svm.joblib`。
@@ -118,14 +118,14 @@ python train.py scene-evaluate `
 
 ```powershell
 python train.py prepare-comparison `
-  --dataset-root "D:\datasets\yolo_augmented" `
-  --output detector_module/artifacts/comparison_dataset
+  --dataset-root "$env:AUGMENTED_DATASET" `
+  --output scene_recognition/detector_module/artifacts/comparison_dataset
 ```
 
 预期生成：
 
 ```text
-detector_module/artifacts/comparison_dataset/
+scene_recognition/detector_module/artifacts/comparison_dataset/
 ├─ train_noaug.txt
 ├─ train_aug.txt
 ├─ val.txt
@@ -170,7 +170,7 @@ YOLOv8n：
 
 ```powershell
 python train.py yolo `
-  --data detector_module/artifacts/comparison_dataset/data_aug.yaml `
+  --data scene_recognition/detector_module/artifacts/comparison_dataset/data_aug.yaml `
   --name custom_yolov8n_aug_pretrained `
   --epochs 150 `
   --eval-split test `
@@ -183,8 +183,8 @@ ResNet18-FPN：
 
 ```powershell
 python train.py resnet-detector `
-  --data detector_module/artifacts/comparison_dataset/data_aug.yaml `
-  --output detector_module/runs/custom_resnet18det_aug_pretrained `
+  --data scene_recognition/detector_module/artifacts/comparison_dataset/data_aug.yaml `
+  --output scene_recognition/detector_module/runs/custom_resnet18det_aug_pretrained `
   --epochs 6 `
   --batch-size 4
 ```
@@ -207,12 +207,12 @@ python train.py yolo-evaluate
 
 ```powershell
 python train.py crop-prepare `
-  --index scene_module/artifacts/scene_index.csv `
-  --output target_classifier_module/artifacts/target_crops
+  --index image_processing/artifacts/scene_index.csv `
+  --output scene_recognition/target_classifier_module/artifacts/target_crops
 
 python train.py crop-classifier `
-  --manifest target_classifier_module/artifacts/target_crops/manifest.csv `
-  --output target_classifier_module/runs/resnet18_target_baseline_none `
+  --manifest scene_recognition/target_classifier_module/artifacts/target_crops/manifest.csv `
+  --output scene_recognition/target_classifier_module/runs/resnet18_target_baseline_none `
   --epochs 12 `
   --batch-size 32
 ```

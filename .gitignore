@@ -29,6 +29,15 @@ docs/comparison/*.json
 scene_module/runs/
 target_classifier_module/artifacts/
 target_classifier_module/runs/
+# Current repository layout. Keep local datasets, generated manifests,
+# checkpoints, and experiment runs out of Git.
+image_processing/artifacts/
+image_processing/runs/
+scene_recognition/runs/
+scene_recognition/detector_module/artifacts/
+scene_recognition/detector_module/runs/
+scene_recognition/target_classifier_module/artifacts/
+scene_recognition/target_classifier_module/runs/
 runs/
 *.bmp
 *.csv
