@@ -76,15 +76,20 @@ def main() -> None:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--device", default="0" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--image-size", type=int, default=640)
+    parser.add_argument("--checkpoint", type=Path, help="只评估一个额外 checkpoint")
+    parser.add_argument("--run-name", default="candidate", help="单 checkpoint 在输出 JSON 中的名称")
     args = parser.parse_args()
 
     config = yaml.safe_load(args.data.read_text(encoding="utf-8"))
     class_names = read_class_names(args.data)
     test_dataset = YoloManifestDataset(Path(config["test"]), len(class_names))
-    runs = {
-        tag: PROJECT_ROOT / "detector_module" / "runs" / f"cmp8_yolov8n_{tag}" / "weights" / "best.pt"
-        for tag in ("noaug_pretrained", "noaug_scratch", "aug_pretrained", "aug_scratch")
-    }
+    if args.checkpoint is not None:
+        runs = {args.run_name: args.checkpoint}
+    else:
+        runs = {
+            tag: PROJECT_ROOT / "detector_module" / "runs" / f"cmp8_yolov8n_{tag}" / "weights" / "best.pt"
+            for tag in ("noaug_pretrained", "noaug_scratch", "aug_pretrained", "aug_scratch")
+        }
     report = {
         "evaluator": "detector_module.resnet18_detector.detection_metrics (COCO-style 101-point AP)",
         "test_images": len(test_dataset),
