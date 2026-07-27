@@ -26,6 +26,8 @@
 ChallengeCup/
 ├─ train.py                              # 统一训练与数据准备入口
 ├─ run_detection_experiments.py          # 最终八组端到端检测调度器
+├─ image_processing/                     # 图像审计、特征提取和数据准备入口
+├─ scene_recognition/                    # 场景训练、推理和可视化入口
 ├─ scene_module/                         # 场景数据审计、特征提取、训练与推理
 ├─ target_classifier_module/             # ResNet18裁剪分类与历史整图存在判断
 ├─ detector_module/                      # YOLOv8n和ResNet18-FPN检测
@@ -56,6 +58,8 @@ pip install -r requirements.txt
 
 ```powershell
 python train.py --help
+python train.py image-processing --help
+python train.py scene-recognition --help
 python train.py detection-matrix --help
 ```
 

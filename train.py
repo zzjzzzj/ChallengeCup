@@ -9,6 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 COMMANDS: dict[str, tuple[str, ...]] = {
+    "image-processing": ("-m", "image_processing.cli"),
+    "scene-recognition": ("-m", "scene_recognition.cli"),
     "scene-prepare": ("-m", "scene_module.analyze_and_prepare"),
     "scene-extract": ("-m", "scene_module.feature_engineering", "extract"),
     "scene-evaluate": ("-m", "scene_module.feature_engineering", "evaluate"),
@@ -29,6 +31,8 @@ def usage() -> str:
         "Usage: python train.py <command> [arguments]",
         "",
         "Commands:",
+        "  image-processing    image audit, feature extraction and dataset preparation",
+        "  scene-recognition   scene training, inference and visualization",
         "  scene-prepare       audit data and create the scene split",
         "  scene-extract       extract handcrafted scene features",
         "  scene-evaluate      train/evaluate scene classifiers",
