@@ -1,0 +1,6 @@
+numpy
+Pillow
+scikit-learn
+onnx>=1.17,<2
+
+# 请根据本机CUDA或昇腾环境单独安装匹配版本的torch与torchvision。

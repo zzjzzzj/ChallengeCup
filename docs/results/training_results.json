@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "contains_paths": false,
+  "contains_predictions": false,
+  "metrics_are_fractions": false,
+  "scene_classification": {
+    "test_images": 111,
+    "feature_ablation": [
+      {"name": "intensity", "accuracy": 76.58, "macro_f1": 75.22},
+      {"name": "texture", "accuracy": 91.89, "macro_f1": 91.41},
+      {"name": "frequency", "accuracy": 72.07, "macro_f1": 68.11},
+      {"name": "lbp", "accuracy": 92.79, "macro_f1": 92.33},
+      {"name": "glcm", "accuracy": 81.98, "macro_f1": 80.60},
+      {"name": "gradient_local", "accuracy": 84.68, "macro_f1": 83.06},
+      {"name": "lbp_glcm", "accuracy": 90.09, "macro_f1": 89.77},
+      {"name": "texture_frequency", "accuracy": 92.79, "macro_f1": 92.47},
+      {"name": "intensity_texture", "accuracy": 90.99, "macro_f1": 90.81},
+      {"name": "all_visual", "accuracy": 90.99, "macro_f1": 90.60},
+      {"name": "all_visual_plus_sensor", "accuracy": 90.99, "macro_f1": 90.60},
+      {"name": "anova_30_final", "accuracy": 92.79, "macro_f1": 92.25}
+    ]
+  },
+  "crop_classification": [
+    {"protocol": "A", "data": "original", "initialization": "pretrained", "test_crops": 473, "accuracy": 99.79, "macro_f1": 99.78},
+    {"protocol": "B", "data": "original", "initialization": "pretrained", "test_crops": 569, "accuracy": 100.00, "macro_f1": 100.00},
+    {"protocol": "B", "data": "original", "initialization": "scratch", "test_crops": 569, "accuracy": 97.89, "macro_f1": 97.76},
+    {"protocol": "B", "data": "augmented", "initialization": "pretrained", "test_crops": 569, "accuracy": 100.00, "macro_f1": 100.00},
+    {"protocol": "B", "data": "augmented", "initialization": "scratch", "test_crops": 569, "accuracy": 99.30, "macro_f1": 99.31}
+  ],
+  "whole_image_presence": [
+    {"protocol": "A", "variant": "initial_selection", "exact_match": 90.99, "macro_f1": 92.37},
+    {"protocol": "A", "variant": "fixed_selection", "exact_match": 98.20, "macro_f1": 98.30},
+    {"protocol": "C", "data": "original", "initialization": "pretrained", "exact_match": 97.37, "macro_f1": 98.61},
+    {"protocol": "C", "data": "original", "initialization": "scratch", "exact_match": 94.74, "macro_f1": 97.26},
+    {"protocol": "C", "data": "augmented", "initialization": "pretrained", "exact_match": 100.00, "macro_f1": 100.00},
+    {"protocol": "C", "data": "augmented", "initialization": "scratch", "exact_match": 94.74, "macro_f1": 96.50}
+  ],
+  "final_detection_shared_evaluator": [
+    {"model": "resnet18_fpn", "data": "original", "initialization": "pretrained", "precision": 81.13, "recall": 88.77, "map50": 86.32, "map75": 30.96, "map50_95": 41.44},
+    {"model": "resnet18_fpn", "data": "original", "initialization": "scratch", "precision": 72.73, "recall": 75.36, "map50": 72.26, "map75": 22.55, "map50_95": 32.94},
+    {"model": "resnet18_fpn", "data": "augmented", "initialization": "pretrained", "precision": 72.94, "recall": 89.86, "map50": 87.20, "map75": 29.26, "map50_95": 41.69},
+    {"model": "resnet18_fpn", "data": "augmented", "initialization": "scratch", "precision": 53.62, "recall": 80.43, "map50": 75.68, "map75": 24.35, "map50_95": 35.33},
+    {"model": "yolov8n", "data": "original", "initialization": "pretrained", "precision": 84.00, "recall": 83.70, "map50": 84.06, "map75": 39.93, "map50_95": 42.99},
+    {"model": "yolov8n", "data": "original", "initialization": "scratch", "precision": 82.75, "recall": 76.45, "map50": 77.18, "map75": 34.90, "map50_95": 38.66},
+    {"model": "yolov8n", "data": "augmented", "initialization": "pretrained", "precision": 79.07, "recall": 86.23, "map50": 85.25, "map75": 31.02, "map50_95": 40.86},
+    {"model": "yolov8n", "data": "augmented", "initialization": "scratch", "precision": 81.38, "recall": 85.51, "map50": 84.02, "map75": 31.32, "map50_95": 39.84}
+  ]
+}

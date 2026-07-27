@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "contains_sample_identifiers": false,
+  "images": 750,
+  "sensors": {
+    "ir": 540,
+    "sar": 210
+  },
+  "scenes": {
+    "air": 175,
+    "sea": 169,
+    "urban": 203,
+    "forest": 203
+  },
+  "objects": {
+    "total": 2957,
+    "soldier": 619,
+    "small_aircraft": 699,
+    "warship": 702,
+    "tank": 937
+  },
+  "training_sets": {
+    "original": {
+      "images": 595,
+      "objects": 2388
+    },
+    "augmented": {
+      "images": 4400,
+      "objects": 17663
+    }
+  },
+  "final_protocol": {
+    "validation_images": 79,
+    "test_images": 76,
+    "test_objects": 276,
+    "test_scenes": {
+      "air": 17,
+      "forest": 21,
+      "sea": 17,
+      "urban": 21
+    },
+    "test_objects_by_class": {
+      "soldier": 63,
+      "small_aircraft": 70,
+      "warship": 57,
+      "tank": 86
+    }
+  }
+}

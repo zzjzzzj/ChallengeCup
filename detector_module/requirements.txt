@@ -1,0 +1,7 @@
+ultralytics>=8.4,<8.5
+onnx>=1.17,<2
+onnxruntime>=1.20,<2
+onnxslim>=0.1.71,<1
+PyYAML>=6,<7
+
+# PyTorch/torchvision should be installed separately for the local CUDA version.

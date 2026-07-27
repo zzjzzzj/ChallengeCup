@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f2efe6">
+  <title>遥感场景特征分析台</title>
+  <link rel="icon" href="{{ url_for('static', filename='feature_favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='feature_dashboard.css') }}">
+  <script defer src="{{ url_for('static', filename='feature_dashboard.js') }}"></script>
+</head>
+<body>
+  <a class="skip-link" href="#analysis">跳到图像分析</a>
+
+  <header class="site-header">
+    <a class="wordmark" href="#top" aria-label="返回页面顶部">
+      <span class="wordmark-mark" aria-hidden="true">象</span>
+      <span>场景特征台</span>
+    </a>
+    <div class="system-status" aria-label="系统状态">
+      <span class="status-dot" aria-hidden="true"></span>
+      模型就绪 · 本地运行
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="page-title">
+      <div class="hero-copy reveal" style="--i: 0">
+        <p class="eyebrow">HANDCRAFTED VISION / SCENE INTELLIGENCE</p>
+        <h1 id="page-title">让图像的结构，<br><em>成为可读的数据。</em></h1>
+        <p class="hero-lead">上传一幅遥感图像，系统将沿用训练阶段的同一套特征工程，给出 30 个入选特征、场景概率与训练集偏离程度。</p>
+      </div>
+
+      <div class="hero-index reveal" style="--i: 1" aria-label="系统关键参数">
+        <div class="index-row">
+          <span>候选特征</span>
+          <strong>68</strong>
+        </div>
+        <div class="index-arrow" aria-hidden="true">→</div>
+        <div class="index-row selected">
+          <span>ANOVA 入选</span>
+          <strong>30</strong>
+        </div>
+        <div class="index-meta">
+          <span>四类场景</span>
+          <span>测试准确率 92.79%</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="analysis-shell reveal" id="analysis" style="--i: 2" aria-labelledby="analysis-title">
+      <div class="section-ruler">
+        <span>01 / INPUT</span>
+        <h2 id="analysis-title">载入待分析图像</h2>
+        <span>PNG · JPG · BMP · TIFF / ≤ 16 MB</span>
+      </div>
+
+      <div class="analysis-grid">
+        <form class="upload-panel" id="upload-form">
+          <label class="drop-zone" id="drop-zone" for="image-input">
+            <input id="image-input" name="image" type="file" accept="image/png,image/jpeg,image/bmp,image/tiff" required>
+
+            <span class="drop-empty" id="drop-empty">
+              <span class="reticle" aria-hidden="true"><i></i></span>
+              <strong>将图片拖到这里</strong>
+              <span>或从设备中选择一张图像</span>
+              <span class="choose-file">选择图片</span>
+            </span>
+
+            <span class="image-preview-wrap" id="preview-wrap" hidden>
+              <img id="image-preview" alt="待分析图像预览">
+              <span class="preview-scan" aria-hidden="true"></span>
+              <span class="preview-caption">
+                <strong id="preview-name"></strong>
+                <small id="preview-size"></small>
+              </span>
+            </span>
+          </label>
+
+          <div class="upload-actions">
+            <button class="analyze-button" id="analyze-button" type="submit" disabled>
+              <span class="button-label">开始特征解析</span>
+              <span class="button-arrow" aria-hidden="true">↗</span>
+            </button>
+            <button class="text-button" id="change-image" type="button" disabled>重新选择</button>
+          </div>
+          <p class="form-message" id="form-message" role="alert" aria-live="polite"></p>
+        </form>
+
+        <div class="result-stage" id="result-stage" aria-live="polite">
+          <div class="empty-result" id="empty-result">
+            <div class="empty-diagram" aria-hidden="true">
+              <span class="axis-x"></span>
+              <span class="axis-y"></span>
+              <i style="--x: 14%; --y: 68%"></i>
+              <i style="--x: 29%; --y: 48%"></i>
+              <i style="--x: 45%; --y: 58%"></i>
+              <i style="--x: 62%; --y: 29%"></i>
+              <i style="--x: 80%; --y: 41%"></i>
+            </div>
+            <p>分析结果将在这里展开</p>
+            <span>先在左侧选择一张图片</span>
+          </div>
+
+          <div class="loading-result" id="loading-result" hidden>
+            <div class="loading-orbit" aria-hidden="true"><i></i></div>
+            <strong>正在重建图像特征谱</strong>
+            <span>灰度分布 → 纹理结构 → 频域信息</span>
+          </div>
+
+          <div class="summary-result" id="summary-result" hidden>
+            <div class="scene-summary">
+              <span class="result-kicker">PREDICTED SCENE</span>
+              <div class="scene-line">
+                <h3 id="scene-label">—</h3>
+                <span class="scene-code" id="scene-code">—</span>
+              </div>
+              <p>当前模型判断置信度</p>
+              <div class="confidence-line">
+                <strong id="confidence-value">0.00%</strong>
+                <span class="confidence-track"><i id="confidence-bar"></i></span>
+              </div>
+            </div>
+
+            <div class="probability-list" id="probability-list" aria-label="场景分类概率"></div>
+
+            <dl class="image-facts">
+              <div><dt>原始尺寸</dt><dd id="fact-dimensions">—</dd></div>
+              <div><dt>文件格式</dt><dd id="fact-format">—</dd></div>
+              <div><dt>处理耗时</dt><dd id="fact-time">—</dd></div>
+              <div><dt>输出特征</dt><dd id="fact-count">—</dd></div>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature-section" id="feature-section" hidden aria-labelledby="feature-title">
+      <div class="section-ruler">
+        <span>02 / FEATURE SPECTRUM</span>
+        <h2 id="feature-title">入选特征谱</h2>
+        <span>相对训练集标准分数 · −3σ 至 +3σ</span>
+      </div>
+
+      <div class="spectrum-layout">
+        <div class="spectrum-intro">
+          <p>中线代表训练集平均水平。标记越靠两侧，说明该图像在对应特征上偏离训练集均值越明显。</p>
+          <div class="legend" aria-label="特征分组图例">
+            <span><i class="intensity"></i>灰度分布</span>
+            <span><i class="texture"></i>纹理结构</span>
+            <span><i class="frequency"></i>频域信息</span>
+          </div>
+        </div>
+        <div class="spectrum-chart" id="spectrum-chart"></div>
+      </div>
+    </section>
+
+    <section class="feature-table-section" id="table-section" hidden aria-labelledby="table-title">
+      <div class="table-heading">
+        <div>
+          <span class="result-kicker">03 / RAW VALUES</span>
+          <h2 id="table-title">30 个特征的对应值</h2>
+        </div>
+        <button class="download-button" id="download-json" type="button">导出 JSON <span aria-hidden="true">↓</span></button>
+      </div>
+
+      <div class="filter-row" role="group" aria-label="筛选特征分组">
+        <button class="filter-button active" type="button" data-group="all">全部 <span>30</span></button>
+        <button class="filter-button" type="button" data-group="intensity">灰度分布</button>
+        <button class="filter-button" type="button" data-group="texture">纹理结构</button>
+        <button class="filter-button" type="button" data-group="frequency">频域信息</button>
+      </div>
+
+      <div class="feature-table-wrap">
+        <table class="feature-table">
+          <thead>
+            <tr>
+              <th scope="col">序号</th>
+              <th scope="col">特征</th>
+              <th scope="col">程序字段</th>
+              <th scope="col">原始值</th>
+              <th scope="col">标准分数</th>
+              <th scope="col">重要度</th>
+            </tr>
+          </thead>
+          <tbody id="feature-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>SCENE FEATURE ENGINEERING MODULE</span>
+    <span>灰度 · 纹理 · 频域 / 本地数据不会上传至外部服务</span>
+  </footer>
+</body>
+</html>

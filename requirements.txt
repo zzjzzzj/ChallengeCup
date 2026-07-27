@@ -1,0 +1,16 @@
+# Install torch and torchvision separately for the local CUDA/CPU environment.
+numpy>=1.26,<3
+pandas>=2.1,<3
+Pillow>=10,<12
+scipy>=1.11,<2
+scikit-learn>=1.4,<2
+matplotlib>=3.8,<4
+joblib>=1.3,<2
+PyYAML>=6,<7
+ultralytics>=8.4,<8.5
+
+# Optional runtime/export tools used by the repository.
+Flask>=3,<4
+onnx>=1.17,<2
+onnxruntime>=1.20,<2
+onnxslim>=0.1.71,<1

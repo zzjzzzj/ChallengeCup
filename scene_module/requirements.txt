@@ -1,0 +1,8 @@
+numpy
+pandas
+Pillow
+scipy
+scikit-learn
+matplotlib
+joblib
+Flask>=3.0,<4
