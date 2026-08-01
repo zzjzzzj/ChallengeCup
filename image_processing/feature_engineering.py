@@ -344,7 +344,7 @@ def evaluate(features_csv: Path, output: Path) -> None:
         "logistic_regression": make_pipeline(StandardScaler(), LogisticRegression(max_iter=5000, class_weight="balanced")),
         "svm_rbf": make_pipeline(StandardScaler(), SVC(C=3.0, kernel="rbf", class_weight="balanced", probability=True)),
         "random_forest": RandomForestClassifier(
-            n_estimators=600, max_features="sqrt", min_samples_leaf=2, class_weight="balanced", random_state=42, n_jobs=-1
+            n_estimators=600, max_features="sqrt", min_samples_leaf=2, class_weight="balanced", random_state=42, n_jobs=1
         ),
     }
     results = {}

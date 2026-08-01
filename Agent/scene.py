@@ -21,6 +21,12 @@ FILENAME_SCENES = {
 
 
 def _scene_from_filename(path: Path) -> str | None:
+    """从项目数据集命名中解析场景。
+
+    数据集文件名形如 ir_r1_base_air_000001.png。这个函数只作为
+    模型不可用时的可解释回退，正式评估仍应优先使用训练好的场景模型。
+    """
+
     tokens = path.stem.lower().replace("-", "_").split("_")
     for token in tokens:
         if token in FILENAME_SCENES:
@@ -29,7 +35,15 @@ def _scene_from_filename(path: Path) -> str | None:
 
 
 class SceneRecognizer:
-    """Scene recognizer with SVM/joblib adapter and deterministic fallback."""
+    """场景识别适配器。
+
+    当前支持两条路径：
+    1. 加载image_processing训练出的SVM/joblib模型；
+    2. 模型缺失或推理失败时，使用文件名/图像统计规则回退。
+
+    返回统一的ProbabilityResult，包含label、confidence和四类概率，
+    方便后续和目标检测结果进行概率融合。
+    """
 
     def __init__(self, model_path: Path | None = None, metadata_path: Path | None = None) -> None:
         self.model_path = model_path
@@ -39,6 +53,12 @@ class SceneRecognizer:
         self.warnings: list[str] = []
 
     def _load(self) -> bool:
+        """加载场景模型和元数据。
+
+        元数据里保存训练时的输入特征列表、场景名称和入选特征。
+        推理时必须按同一列顺序构造DataFrame，否则sklearn模型会读错特征。
+        """
+
         if self._model is not None and self._metadata is not None:
             return True
         if not self.model_path or not self.metadata_path:
@@ -58,6 +78,12 @@ class SceneRecognizer:
             return False
 
     def predict(self, image_path: Path, modality: str) -> ProbabilityResult:
+        """预测单张图像的场景。
+
+        先尝试模型推理；如果模型文件不存在、加载失败或特征不匹配，
+        就退回到可解释规则，并把原因放入warnings，避免静默失败。
+        """
+
         named_scene = _scene_from_filename(image_path)
         if self._load():
             try:
@@ -67,6 +93,8 @@ class SceneRecognizer:
         return self._predict_with_heuristic(image_path, modality, named_scene)
 
     def _predict_with_model(self, image_path: Path) -> ProbabilityResult:
+        """使用训练好的特征SVM进行场景分类。"""
+
         import pandas as pd
 
         assert self._model is not None
@@ -99,6 +127,15 @@ class SceneRecognizer:
     def _predict_with_heuristic(
         self, image_path: Path, modality: str, named_scene: str | None
     ) -> ProbabilityResult:
+        """无模型时的场景判断规则。
+
+        规则只依赖文件名和图像质量指标：
+        - 平滑、亮度较高更偏向air/sea；
+        - 纹理、边缘、噪声更强更偏向urban/forest；
+        - SAR模态对sea/urban给轻微加权。
+        这条路径用于演示和兜底，不应作为最终性能指标。
+        """
+
         if named_scene:
             probabilities = {name: 0.025 for name in SCENE_LABELS}
             probabilities[named_scene] = 0.925
@@ -139,6 +176,13 @@ class SceneRecognizer:
 def build_environment_state(
     image_path: Path, modality_result: ProbabilityResult, scene_result: ProbabilityResult
 ) -> dict[str, Any]:
+    """构造环境状态向量。
+
+    这是流程图中“场景分类结果”和“图像处理结果”之间的桥梁。
+    一方面保留人能看懂的high/medium/low等级，另一方面输出归一化
+    state_vector，方便后续决策模块或轻量模型直接消费。
+    """
+
     metrics = quality_metrics(image_path)
     levels = quality_levels(metrics)
     return {

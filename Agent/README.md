@@ -10,6 +10,8 @@
 6. “模态 + 场景 + 目标”的一致性推理；
 7. 决策指令、专家路由、损失代理值和持续学习记忆输出。
 
+面向汇报讲解的完整流程整理见 [EXPLANATION_FLOW.md](EXPLANATION_FLOW.md)。
+
 ## 单图运行
 
 ```powershell

@@ -12,6 +12,8 @@ from .memory import EpisodeMemory
 
 
 def _write_or_print(payload: dict, output: Path | None) -> None:
+    """统一处理命令输出：既打印到终端，也可写入JSON文件。"""
+
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     if output:
         output.parent.mkdir(parents=True, exist_ok=True)
@@ -20,6 +22,12 @@ def _write_or_print(payload: dict, output: Path | None) -> None:
 
 
 def _config_from_args(args: argparse.Namespace) -> AgentConfig:
+    """把命令行参数转换成AgentConfig。
+
+    CLI只负责解析用户输入；真正的默认值、路径检查和模块初始化都交给
+    AgentConfig和IntelligentRecognitionAgent，避免入口层逻辑过重。
+    """
+
     return AgentConfig.from_values(
         scene_model=args.scene_model,
         scene_metadata=args.scene_metadata,
@@ -36,6 +44,8 @@ def _config_from_args(args: argparse.Namespace) -> AgentConfig:
 
 
 def infer(args: argparse.Namespace) -> None:
+    """单图推理入口，对应演示时最常用的一条命令。"""
+
     config = _config_from_args(args)
     modalities = {
         key: value
@@ -57,11 +67,23 @@ def infer(args: argparse.Namespace) -> None:
 
 
 def batch(args: argparse.Namespace) -> None:
+    """批量推理入口。
+
+    manifest可以直接使用image_processing生成的scene_index.csv。
+    --split和--limit用于先做小规模冒烟测试，确认流程没有问题后再跑全量。
+    """
+
     config = _config_from_args(args)
     agent = IntelligentRecognitionAgent(config)
     rows = list(csv.DictReader(args.manifest.open("r", encoding="utf-8-sig", newline="")))
     if not rows:
         raise ValueError(f"manifest is empty: {args.manifest}")
+    if args.split:
+        rows = [row for row in rows if row.get("split") == args.split]
+    if args.limit is not None:
+        rows = rows[: args.limit]
+    if not rows:
+        raise ValueError("no rows matched the requested batch filters")
     output_dir = args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
     summary_rows = []
@@ -93,6 +115,12 @@ def batch(args: argparse.Namespace) -> None:
 
 
 def feedback(args: argparse.Namespace) -> None:
+    """人工反馈入口。
+
+    推理后如果人工发现场景/模态/目标有误，可以把修正写入memory。
+    这些记录后续可作为增量学习的回放样本或错误分析清单。
+    """
+
     memory = EpisodeMemory(args.memory)
     targets = [item.strip() for item in (args.targets or "").split(",") if item.strip()]
     memory.append_feedback(
@@ -106,6 +134,8 @@ def feedback(args: argparse.Namespace) -> None:
 
 
 def loss(args: argparse.Namespace) -> None:
+    """损失公式计算入口，用于讲解训练目标或手动核对实验记录。"""
+
     payload = combine_training_losses(
         l_box=args.l_box,
         l_cls=args.l_cls,
@@ -123,6 +153,8 @@ def loss(args: argparse.Namespace) -> None:
 
 
 def add_common_runtime_args(parser: argparse.ArgumentParser) -> None:
+    """给infer/batch添加共享运行参数。"""
+
     parser.add_argument("--scene-model", type=Path, help="feature SVM/joblib scene model")
     parser.add_argument("--scene-metadata", type=Path, help="scene model metadata JSON")
     parser.add_argument("--detector-model", type=Path, help="YOLO .pt detector model")
@@ -153,6 +185,8 @@ def build_parser() -> argparse.ArgumentParser:
     batch_parser = sub.add_parser("batch", help="run reports for a CSV manifest")
     batch_parser.add_argument("--manifest", type=Path, required=True)
     batch_parser.add_argument("--output-dir", type=Path, required=True)
+    batch_parser.add_argument("--split", choices=["train", "val", "test"], help="optional split filter")
+    batch_parser.add_argument("--limit", type=int, help="optional maximum number of rows to run")
     add_common_runtime_args(batch_parser)
     batch_parser.set_defaults(func=batch)
 

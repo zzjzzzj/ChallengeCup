@@ -13,7 +13,7 @@ COMMANDS: dict[str, tuple[str, ...]] = {
     "scene-recognition": ("-m", "scene_recognition.cli"),
     "scene-prepare": ("-m", "image_processing.analyze_and_prepare"),
     "scene-extract": ("-m", "image_processing.feature_engineering", "extract"),
-    "scene-evaluate": ("-m", "scene_recognition.feature_classifier"),
+    "scene-evaluate": ("-m", "image_processing.feature_engineering", "evaluate"),
     "crop-prepare": ("-m", "image_processing.prepare_crops"),
     "crop-classifier": ("-m", "scene_recognition.target_classifier_module.train_classifier"),
     "whole-classifier": ("-m", "scene_recognition.target_classifier_module.train_whole_image"),

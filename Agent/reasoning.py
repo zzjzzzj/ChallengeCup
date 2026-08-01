@@ -14,6 +14,10 @@ from .schemas import (
 )
 
 
+# 场景-目标先验约束。
+# 这组规则来自当前数据集和流程图中的“唯一确定场景”设计：
+# 天空主要对应小型飞机，海洋主要对应舰船，城市/森林主要对应士兵和坦克。
+# 它不是替代模型的硬分类器，而是在模型输出之后做一致性校验和冲突提示。
 ALLOWED_TARGETS_BY_SCENE = {
     "air": {"small_aircraft"},
     "sea": {"warship"},
@@ -21,6 +25,9 @@ ALLOWED_TARGETS_BY_SCENE = {
     "forest": {"soldier", "tank"},
 }
 
+# 反向索引：由目标类别反推可能场景。
+# resolve_final_scene会用它给场景概率加权投票，解决场景模型置信度不足时
+# “目标结果可以帮助确定场景”的问题。
 SCENES_BY_TARGET = {
     "small_aircraft": {"air"},
     "warship": {"sea"},
@@ -28,6 +35,9 @@ SCENES_BY_TARGET = {
     "tank": {"urban", "forest"},
 }
 
+# 场景决策策略表。
+# 每个场景会对应一组检测器配置、优先关注目标、模态权重和特征权重。
+# 这些内容会进入最终报告的decision字段，可直接解释为“智能体下发的指令”。
 SCENE_POLICY = {
     "air": {
         "detector_profile": "air_small_target",
@@ -61,6 +71,12 @@ SCENE_POLICY = {
 
 
 def invalid_combinations(scene_label: str, detections: list[DetectionBox]) -> list[dict[str, Any]]:
+    """检查目标类别是否符合当前场景。
+
+    例如海洋场景里出现坦克、天空场景里出现舰船，都会被记录为不合理组合。
+    这些不合理组合会进入报告，也会提高L_proto代理损失。
+    """
+
     allowed = ALLOWED_TARGETS_BY_SCENE.get(scene_label, set())
     invalid = []
     for box in detections:
@@ -86,6 +102,16 @@ def resolve_final_scene(
     modality_result: ProbabilityResult,
     detections: list[DetectionBox],
 ) -> ProbabilityResult:
+    """融合场景模型、模态先验和目标类别，得到最终场景。
+
+    融合思想：
+    1. 场景模型概率占主导，保留图像整体语义判断；
+    2. 检出的目标类别给兼容场景投票，例如warship支持sea；
+    3. 模态只给很小的偏置，例如SAR更常用于海面/城市结构观察。
+
+    这样既不让规则盖过模型，也能在模型不稳定时利用目标结果进行修正。
+    """
+
     scores = {scene: float(scene_result.probabilities.get(scene, 0.0)) * 0.72 for scene in SCENE_LABELS}
     if detections:
         vote_weight = 0.24 / max(1, len(detections))
@@ -124,6 +150,8 @@ def build_consistency_report(
     final_scene: ProbabilityResult,
     detections: list[DetectionBox],
 ) -> dict[str, Any]:
+    """生成一致性报告，说明模型判断是否被目标结果修正。"""
+
     original_invalid = invalid_combinations(scene_result.label, detections)
     final_invalid = invalid_combinations(final_scene.label, detections)
     target_counts: dict[str, int] = {}
@@ -146,6 +174,13 @@ def build_consistency_report(
 
 
 def active_experts(modality: str, detections: list[DetectionBox], final_scene: str) -> list[str]:
+    """根据模态和目标选择专家。
+
+    流程图里提到“12个专家+跨模态适配器”：12个专家可以理解为
+    3种模态 * 4类目标。这里先输出路由名称，后续接真实专家模型时
+    可以按这个名字加载对应权重。
+    """
+
     targets = [box.class_name for box in detections if box.class_name != "unknown"]
     if not targets:
         targets = list(SCENE_POLICY.get(final_scene, SCENE_POLICY["urban"])["priority_classes"])
@@ -162,6 +197,17 @@ def build_decision(
     environment: dict[str, Any],
     detections: list[DetectionBox],
 ) -> dict[str, Any]:
+    """根据最终场景和环境质量生成检测/部署决策。
+
+    输出包含：
+    - detector_profile: 应该使用哪类检测配置；
+    - confidence_threshold: 当前帧的检测阈值；
+    - priority_classes: 当前帧重点关注的目标；
+    - sensor_weights/feature_weights: 多模态或特征融合时的建议权重；
+    - expert_routing: 多专家模型路由；
+    - model_management: 端侧部署策略说明。
+    """
+
     policy = dict(SCENE_POLICY.get(final_scene.label, SCENE_POLICY["urban"]))
     threshold = float(policy["confidence_threshold"])
     if environment.get("noise_level") == "high":
@@ -202,6 +248,8 @@ def describe_scene(
     detections: list[DetectionBox],
     consistency: dict[str, Any],
 ) -> str:
+    """生成一段可以直接放进报告或演示页面的中文场景描述。"""
+
     modality = MODALITY_CN.get(modality_result.label, modality_result.label)
     scene = SCENE_CN.get(final_scene.label, final_scene.label)
     if detections:
@@ -219,6 +267,8 @@ def describe_scene(
 
 
 def summarize_detection_confidence(detections: list[DetectionBox]) -> dict[str, Any]:
+    """给阶段耗时日志附带一个简短目标置信度摘要。"""
+
     if not detections:
         return {"count": 0, "mean_confidence": 0.0, "min_confidence": 0.0}
     values = [float(box.confidence) for box in detections]
