@@ -35,6 +35,8 @@ class AgentConfig:
     scene_metadata: Path | None = field(
         default_factory=lambda: _existing(DEFAULT_SCENE_RUN / "model_metadata.json")
     )
+    scene_cnn_checkpoint: Path | None = None
+    calibration: Path | None = None
     detector_model: Path | None = None
     target_checkpoint: Path | None = None
     memory_path: Path = field(default_factory=lambda: DEFAULT_MEMORY)
@@ -53,6 +55,8 @@ class AgentConfig:
         *,
         scene_model: str | Path | None = None,
         scene_metadata: str | Path | None = None,
+        scene_cnn_checkpoint: str | Path | None = None,
+        calibration: str | Path | None = None,
         detector_model: str | Path | None = None,
         target_checkpoint: str | Path | None = None,
         memory_path: str | Path | None = None,
@@ -68,6 +72,10 @@ class AgentConfig:
             config.scene_model = _path(scene_model)
         if scene_metadata is not None:
             config.scene_metadata = _path(scene_metadata)
+        if scene_cnn_checkpoint is not None:
+            config.scene_cnn_checkpoint = _path(scene_cnn_checkpoint)
+        if calibration is not None:
+            config.calibration = _path(calibration)
         if detector_model is not None:
             config.detector_model = _path(detector_model)
         if target_checkpoint is not None:
@@ -93,6 +101,8 @@ class AgentConfig:
         optional_paths = {
             "scene_model": self.scene_model,
             "scene_metadata": self.scene_metadata,
+            "scene_cnn_checkpoint": self.scene_cnn_checkpoint,
+            "calibration": self.calibration,
             "detector_model": self.detector_model,
             "target_checkpoint": self.target_checkpoint,
         }
@@ -100,7 +110,9 @@ class AgentConfig:
             if path is not None and not path.is_file():
                 warnings.append(f"{name} does not exist: {path}")
         if self.scene_model and not self.scene_metadata:
-            warnings.append("scene_model is set but scene_metadata is missing; scene fallback may be used.")
+            warnings.append(
+                "scene_model is set but scene_metadata is missing; scene fallback may be used."
+            )
         if not 0.0 <= self.scene_threshold <= 1.0:
             warnings.append("scene_threshold should be in [0, 1].")
         if not 0.0 <= self.detector_confidence <= 1.0:

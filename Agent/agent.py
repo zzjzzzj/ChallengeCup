@@ -52,7 +52,13 @@ class IntelligentRecognitionAgent:
 
         # 以下四个对象对应流程图中的四条核心识别支路。
         self.modality_recognizer = ModalityRecognizer()
-        self.scene_recognizer = SceneRecognizer(self.config.scene_model, self.config.scene_metadata)
+        self.scene_recognizer = SceneRecognizer(
+            self.config.scene_model,
+            self.config.scene_metadata,
+            cnn_checkpoint=self.config.scene_cnn_checkpoint,
+            scene_threshold=self.config.scene_threshold,
+            calibration=self.config.calibration,
+        )
         self.detector = TargetDetector(
             self.config.detector_model,
             self.config.class_names,
@@ -131,7 +137,12 @@ class IntelligentRecognitionAgent:
         # 4. 环境状态向量与增强计划。
         # 环境状态向量是给决策模块看的结构化描述；增强计划对应流程图左侧的
         # “图像处理和增广”，也能直接写进实验说明。
-        environment = build_environment_state(primary_image, modality, scene)
+        environment = build_environment_state(
+            primary_image,
+            modality,
+            scene,
+            calibration=self.scene_recognizer.calibration,
+        )
         augmentation_plan = build_augmentation_plan(modality.label, scene.label, metrics, levels)
 
         # 5. 目标定位。

@@ -3,12 +3,31 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 from .agent import IntelligentRecognitionAgent
-from .config import AgentConfig
+from .config import AgentConfig, PROJECT_ROOT
 from .losses import combine_training_losses
 from .memory import EpisodeMemory
+
+
+# Bridge to train.py COMMANDS so preparation/training is reachable from Agent CLI.
+TRAIN_BRIDGES: dict[str, str] = {
+    "prepare-scene": "scene-prepare",
+    "extract-scene-features": "scene-extract",
+    "evaluate-scene": "scene-evaluate",
+    "prepare-crops": "crop-prepare",
+    "prepare-detection": "prepare-detection",
+    "prepare-comparison": "prepare-comparison",
+    "train-detector": "yolo",
+    "train-resnet-detector": "resnet-detector",
+    "train-target": "crop-classifier",
+    "train-whole-target": "whole-classifier",
+    "image-processing": "image-processing",
+    "scene-recognition": "scene-recognition",
+}
 
 
 def _write_or_print(payload: dict, output: Path | None) -> None:
@@ -22,15 +41,13 @@ def _write_or_print(payload: dict, output: Path | None) -> None:
 
 
 def _config_from_args(args: argparse.Namespace) -> AgentConfig:
-    """把命令行参数转换成AgentConfig。
-
-    CLI只负责解析用户输入；真正的默认值、路径检查和模块初始化都交给
-    AgentConfig和IntelligentRecognitionAgent，避免入口层逻辑过重。
-    """
+    """把命令行参数转换成AgentConfig。"""
 
     return AgentConfig.from_values(
         scene_model=args.scene_model,
         scene_metadata=args.scene_metadata,
+        scene_cnn_checkpoint=getattr(args, "scene_cnn_checkpoint", None),
+        calibration=getattr(args, "calibration", None),
         detector_model=args.detector_model,
         target_checkpoint=args.target_checkpoint,
         memory_path=args.memory,
@@ -70,7 +87,6 @@ def batch(args: argparse.Namespace) -> None:
     """批量推理入口。
 
     manifest可以直接使用image_processing生成的scene_index.csv。
-    --split和--limit用于先做小规模冒烟测试，确认流程没有问题后再跑全量。
     """
 
     config = _config_from_args(args)
@@ -115,11 +131,7 @@ def batch(args: argparse.Namespace) -> None:
 
 
 def feedback(args: argparse.Namespace) -> None:
-    """人工反馈入口。
-
-    推理后如果人工发现场景/模态/目标有误，可以把修正写入memory。
-    这些记录后续可作为增量学习的回放样本或错误分析清单。
-    """
+    """人工反馈入口。"""
 
     memory = EpisodeMemory(args.memory)
     targets = [item.strip() for item in (args.targets or "").split(",") if item.strip()]
@@ -134,7 +146,7 @@ def feedback(args: argparse.Namespace) -> None:
 
 
 def loss(args: argparse.Namespace) -> None:
-    """损失公式计算入口，用于讲解训练目标或手动核对实验记录。"""
+    """损失公式计算入口。"""
 
     payload = combine_training_losses(
         l_box=args.l_box,
@@ -152,11 +164,26 @@ def loss(args: argparse.Namespace) -> None:
     _write_or_print(payload, args.output)
 
 
+def run_train_bridge(args: argparse.Namespace) -> None:
+    """Forward remaining args to ``python train.py <mapped-command> ...``."""
+
+    train_command = TRAIN_BRIDGES[args.command]
+    train_script = PROJECT_ROOT / "train.py"
+    forwarded = list(getattr(args, "forwarded", []) or [])
+    completed = subprocess.run(
+        [sys.executable, str(train_script), train_command, *forwarded],
+        cwd=PROJECT_ROOT,
+    )
+    raise SystemExit(completed.returncode)
+
+
 def add_common_runtime_args(parser: argparse.ArgumentParser) -> None:
     """给infer/batch添加共享运行参数。"""
 
     parser.add_argument("--scene-model", type=Path, help="feature SVM/joblib scene model")
     parser.add_argument("--scene-metadata", type=Path, help="scene model metadata JSON")
+    parser.add_argument("--scene-cnn-checkpoint", type=Path, help="optional CNN scene checkpoint")
+    parser.add_argument("--calibration", type=Path, help="optional quality calibration JSON")
     parser.add_argument("--detector-model", type=Path, help="YOLO .pt detector model")
     parser.add_argument("--target-checkpoint", type=Path, help="ResNet18 crop classifier checkpoint")
     parser.add_argument("--memory", type=Path, help="agent JSONL memory path")
@@ -166,6 +193,20 @@ def add_common_runtime_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--device", default=None, help="auto/cpu/cuda/0")
     parser.add_argument("--no-label-fallback", action="store_true")
     parser.add_argument("--no-memory", action="store_true")
+
+
+def _add_bridge_parser(sub: argparse._SubParsersAction, name: str, help_text: str) -> None:
+    bridge = sub.add_parser(
+        name,
+        help=help_text,
+        description=f"Bridge to `python train.py {TRAIN_BRIDGES[name]} ...`",
+    )
+    bridge.add_argument(
+        "forwarded",
+        nargs=argparse.REMAINDER,
+        help="arguments forwarded to train.py (include a leading --)",
+    )
+    bridge.set_defaults(func=run_train_bridge)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -213,6 +254,19 @@ def build_parser() -> argparse.ArgumentParser:
     loss_parser.add_argument("--lambda-moti", type=float, default=0.3)
     loss_parser.add_argument("--output", type=Path)
     loss_parser.set_defaults(func=loss)
+
+    _add_bridge_parser(sub, "prepare-scene", "bridge to train.py scene-prepare")
+    _add_bridge_parser(sub, "extract-scene-features", "bridge to train.py scene-extract")
+    _add_bridge_parser(sub, "evaluate-scene", "bridge to train.py scene-evaluate")
+    _add_bridge_parser(sub, "prepare-crops", "bridge to train.py crop-prepare")
+    _add_bridge_parser(sub, "prepare-detection", "bridge to train.py prepare-detection")
+    _add_bridge_parser(sub, "prepare-comparison", "bridge to train.py prepare-comparison")
+    _add_bridge_parser(sub, "train-detector", "bridge to train.py yolo")
+    _add_bridge_parser(sub, "train-resnet-detector", "bridge to train.py resnet-detector")
+    _add_bridge_parser(sub, "train-target", "bridge to train.py crop-classifier")
+    _add_bridge_parser(sub, "train-whole-target", "bridge to train.py whole-classifier")
+    _add_bridge_parser(sub, "image-processing", "bridge to train.py image-processing")
+    _add_bridge_parser(sub, "scene-recognition", "bridge to train.py scene-recognition")
 
     return parser
 

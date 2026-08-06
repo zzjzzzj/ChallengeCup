@@ -5,6 +5,8 @@ from typing import Any
 
 from PIL import Image
 
+from scene_recognition.target_classifier_module.infer import load_crop_classifier, predict_crop_image
+
 from .schemas import DetectionBox, TARGET_LABELS
 
 
@@ -17,7 +19,7 @@ SCENE_TARGET_PRIORS = {
 
 
 class TargetClassifier:
-    """Refine detector classes using a crop classifier or scene priors."""
+    """Refine detector classes using the shared crop classifier API or scene priors."""
 
     def __init__(
         self,
@@ -42,7 +44,9 @@ class TargetClassifier:
             try:
                 return self._classify_crops(image_path, detections)
             except Exception as exc:  # noqa: BLE001
-                self.warnings.append(f"Target crop classifier failed; detector classes are kept: {exc}")
+                self.warnings.append(
+                    f"Target crop classifier failed; detector classes are kept: {exc}"
+                )
         if self.use_scene_prior:
             return [self._fill_unknown_with_scene_prior(box, scene_label) for box in detections]
         return detections
@@ -50,52 +54,21 @@ class TargetClassifier:
     def _load_runtime(self) -> dict[str, Any]:
         if self._runtime is not None:
             return self._runtime
-        import torch
-
-        from scene_recognition.target_classifier_module.training import (
-            build_resnet18,
-            build_transforms,
-            resolve_device,
-        )
-
         assert self.checkpoint_path is not None
-        try:
-            checkpoint = torch.load(self.checkpoint_path, map_location="cpu", weights_only=False)
-        except TypeError:
-            checkpoint = torch.load(self.checkpoint_path, map_location="cpu")
-        class_names = list(checkpoint.get("class_names", self.class_names))
-        image_size = int(checkpoint.get("image_size", 224))
-        device = resolve_device(self.device_name)
-        model = build_resnet18(len(class_names), pretrained=False)
-        model.load_state_dict(checkpoint["state_dict"])
-        model.to(device).eval()
-        _, evaluation_transform = build_transforms(image_size, augmentation="none")
-        self._runtime = {
-            "torch": torch,
-            "model": model,
-            "device": device,
-            "transform": evaluation_transform,
-            "class_names": class_names,
-        }
+        self._runtime = load_crop_classifier(self.checkpoint_path, self.device_name)
         return self._runtime
 
     def _classify_crops(self, image_path: Path, detections: list[DetectionBox]) -> list[DetectionBox]:
         runtime = self._load_runtime()
-        torch = runtime["torch"]
-        model = runtime["model"]
-        transform = runtime["transform"]
-        device = runtime["device"]
-        class_names = runtime["class_names"]
+        class_names = list(runtime["class_names"])
         refined: list[DetectionBox] = []
         with Image.open(image_path) as opened:
             image = opened.convert("RGB")
             width, height = image.size
             for index, box in enumerate(detections):
                 crop = image.crop(box.xyxy_pixels(width, height, padding_ratio=0.08))
-                tensor = transform(crop).unsqueeze(0).to(device)
-                with torch.inference_mode():
-                    probabilities = model(tensor).softmax(dim=1)[0].detach().cpu().tolist()
-                class_id = int(max(range(len(probabilities)), key=probabilities.__getitem__))
+                prediction = predict_crop_image(runtime, crop)
+                class_id = int(prediction["predicted_id"])
                 previous = {
                     "class_id": box.class_id,
                     "class_name": box.class_name,
@@ -110,7 +83,7 @@ class TargetClassifier:
                         height=box.height,
                         class_id=class_id,
                         class_name=class_names[class_id],
-                        confidence=round(float(probabilities[class_id]), 6),
+                        confidence=round(float(prediction["confidence"]), 6),
                         source="target_crop_classifier",
                         track_id=box.track_id or f"crop-{index}",
                         metadata={
@@ -118,8 +91,9 @@ class TargetClassifier:
                             "previous_detection": previous,
                             "class_probabilities": {
                                 name: round(float(prob), 6)
-                                for name, prob in zip(class_names, probabilities)
+                                for name, prob in prediction["probabilities"].items()
                             },
+                            "backend": "scene_recognition.target_classifier_module.infer",
                         },
                     )
                 )

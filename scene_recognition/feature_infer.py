@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from typing import Any
 
 import joblib
 import pandas as pd
@@ -21,6 +22,66 @@ def selected_feature_values(
     if missing:
         raise ValueError(f"提取结果缺少特征: {', '.join(missing)}")
     return {name: round(float(extracted[name]), precision) for name in selected_features}
+
+
+def predict_scene_from_features(
+    image: Path,
+    model_path: Path,
+    metadata_path: Path,
+    *,
+    features_only: bool = False,
+    extracted: dict[str, float] | None = None,
+) -> dict[str, Any]:
+    """Extract handcrafted features and optionally classify scene with the SVM model.
+
+    Returns a dict compatible with the previous CLI JSON output. When
+    ``features_only`` is True, classification fields are omitted.
+    """
+
+    if not image.is_file():
+        raise FileNotFoundError(f"图片不存在或不是文件: {image}")
+    if not metadata_path.is_file():
+        raise FileNotFoundError(f"特征元数据不存在: {metadata_path}")
+
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    features = extracted if extracted is not None else extract_one(image)
+    selected_features = list(metadata["selected_features"])
+    result: dict[str, Any] = {
+        "image": str(image.resolve()),
+        "selected_feature_count": len(selected_features),
+        "selected_features": selected_features,
+        "selected_feature_values": selected_feature_values(features, selected_features),
+        "extracted_features": {key: float(value) for key, value in features.items()},
+        "metadata": metadata,
+    }
+
+    if features_only:
+        return result
+
+    if not model_path.is_file():
+        raise FileNotFoundError(f"分类模型不存在: {model_path}")
+
+    model = joblib.load(model_path)
+    input_features = list(metadata["input_features"])
+    missing = [name for name in input_features if name not in features]
+    if missing:
+        raise ValueError(f"提取结果缺少特征: {', '.join(missing)}")
+    frame = pd.DataFrame([{name: features[name] for name in input_features}])
+    probabilities = model.predict_proba(frame)[0]
+    predicted_id = int(probabilities.argmax())
+    scene_names = list(metadata.get("scene_names", SCENES))
+    result.update(
+        {
+            "scene": scene_names[predicted_id],
+            "confidence": round(float(probabilities[predicted_id]), 6),
+            "probabilities": {
+                name: round(float(value), 6) for name, value in zip(scene_names, probabilities)
+            },
+            "model": str(model_path.resolve()),
+            "metadata_path": str(metadata_path.resolve()),
+        }
+    )
+    return result
 
 
 def main() -> None:
@@ -46,41 +107,33 @@ def main() -> None:
     )
     args = p.parse_args()
 
-    if not args.image.is_file():
-        p.error(f"图片不存在或不是文件: {args.image}")
-    if not args.metadata.is_file():
-        p.error(f"特征元数据不存在: {args.metadata}")
+    try:
+        result = predict_scene_from_features(
+            args.image,
+            args.model,
+            args.metadata,
+            features_only=args.features_only,
+        )
+    except FileNotFoundError as exc:
+        p.error(str(exc))
 
-    metadata = json.loads(args.metadata.read_text(encoding="utf-8"))
-    extracted = extract_one(args.image)
-    selected_features = metadata["selected_features"]
-    result = {
-        "image": str(args.image.resolve()),
-        "selected_feature_count": len(selected_features),
-        "selected_features": selected_features,
-        "selected_feature_values": selected_feature_values(extracted, selected_features),
+    # Keep CLI payload aligned with the previous public fields.
+    cli_result = {
+        "image": result["image"],
+        "selected_feature_count": result["selected_feature_count"],
+        "selected_features": result["selected_features"],
+        "selected_feature_values": result["selected_feature_values"],
     }
-
     if not args.features_only:
-        if not args.model.is_file():
-            p.error(f"分类模型不存在: {args.model}")
-        model = joblib.load(args.model)
-        frame = pd.DataFrame([{name: extracted[name] for name in metadata["input_features"]}])
-        probabilities = model.predict_proba(frame)[0]
-        predicted_id = int(probabilities.argmax())
-        scene_names = metadata.get("scene_names", SCENES)
-        result.update(
+        cli_result.update(
             {
-                "scene": scene_names[predicted_id],
-                "confidence": round(float(probabilities[predicted_id]), 6),
-                "probabilities": {
-                    name: round(float(value), 6)
-                    for name, value in zip(scene_names, probabilities)
-                },
+                "scene": result["scene"],
+                "confidence": result["confidence"],
+                "probabilities": result["probabilities"],
             }
         )
 
-    text = json.dumps(result, ensure_ascii=False, indent=2)
+    text = json.dumps(cli_result, ensure_ascii=False, indent=2)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(text, encoding="utf-8")

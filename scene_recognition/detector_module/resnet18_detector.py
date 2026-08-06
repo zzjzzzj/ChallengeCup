@@ -29,27 +29,12 @@ from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
 from torchvision.ops import MultiScaleRoIAlign
 from torchvision.transforms.functional import pil_to_tensor
 
+from scene_recognition.detector_module.boxes import resolve_label_path
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RUNS = PROJECT_ROOT / "scene_recognition" / "detector_module" / "runs"
 IOU_THRESHOLDS = tuple(round(value, 2) for value in np.arange(0.5, 0.96, 0.05))
-
-
-def resolve_label_path(image_path: Path) -> Path:
-    """Resolve both sibling-label and images/labels YOLO directory layouts."""
-
-    sibling = image_path.with_suffix(".txt")
-    if sibling.is_file():
-        return sibling
-    parts = list(image_path.parts)
-    for index in range(len(parts) - 1, -1, -1):
-        if parts[index] == "images":
-            parts[index] = "labels"
-            candidate = Path(*parts).with_suffix(".txt")
-            if candidate.is_file():
-                return candidate
-            break
-    return sibling
 
 
 def parse_yolo_rows(label_path: Path, class_count: int) -> list[tuple[int, float, float, float, float]]:

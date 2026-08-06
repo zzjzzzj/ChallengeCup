@@ -6,6 +6,18 @@
 
 本项目的Agent不是单一识别模型，而是一个智能调度层。它把图像处理、模态识别、场景分类、目标检测、目标分类、场景目标一致性校验、持续学习记忆和端侧部署决策串成一个完整流程。
 
+底层能力已对接仓库模块：
+
+```text
+质量/增强     -> image_processing.scene_runtime
+手工特征      -> image_processing.feature_engineering
+场景SVM       -> scene_recognition.feature_infer
+场景CNN(可选) -> image_processing.scene_runtime.predict_scene_cnn
+YOLO标签      -> scene_recognition.detector_module.boxes
+目标裁剪分类  -> scene_recognition.target_classifier_module.infer
+决策策略基表  -> image_processing.scene_runtime.DEFAULT_POLICY
+```
+
 对应输入输出：
 
 ```text
@@ -43,12 +55,15 @@ warship
 tank
 ```
 
-项目先通过 `scene-prepare` 生成统一索引：
+项目先通过 `scene-prepare` 生成统一索引（也可经 Agent CLI 桥接）：
 
 ```powershell
 python train.py scene-prepare `
   --dataset data\datasets_r1_base_train `
   --output image_processing\artifacts
+
+# 等价：
+python -m Agent.cli prepare-scene -- --dataset data\datasets_r1_base_train --output image_processing\artifacts
 ```
 
 这个步骤完成数据审计、场景/模态解析、train/val/test划分，并生成：
@@ -59,7 +74,7 @@ image_processing/artifacts/scene_index.csv
 
 ## 3. 图像处理与增强建议
 
-Agent先读取图像，计算以下质量指标：
+Agent 通过 `image_processing.scene_runtime.quality_metrics` 读取图像，计算：
 
 - 灰度均值、对比度、动态范围；
 - 清晰度、边缘强度；
@@ -69,12 +84,12 @@ Agent先读取图像，计算以下质量指标：
 
 这些指标会被转换成 `contrast_level / clarity_level / noise_level` 等环境状态。
 
-随后Agent给出增强建议，例如：
+主增强建议来自 `scene_runtime.choose_enhancement`，例如：
 
 - 低对比度：`contrast_stretch`；
-- SAR高噪声：`sar_speckle_denoise`；
+- SAR高噪声：`speckle_denoise` / `sar_speckle_denoise`；
 - 小目标边界弱：`mild_sharpen`；
-- 森林/城市场景：`small_rotation_and_flip` 用于增量训练数据增强。
+- 森林/城市场景：额外追加 `small_rotation_and_flip` 用于增量训练数据增强。
 
 讲解重点：这一步对应流程图左侧的“图像处理和增广”，并且为后面的动态决策提供环境状态向量。
 

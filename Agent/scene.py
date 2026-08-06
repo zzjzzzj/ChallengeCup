@@ -4,7 +4,10 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .image_ops import extract_handcrafted_features, normalize_scores, quality_levels, quality_metrics
+from image_processing.scene_runtime import build_environment_and_policy, predict_scene_cnn
+from scene_recognition.feature_infer import predict_scene_from_features
+
+from .image_ops import extract_handcrafted_features, normalize_scores, quality_metrics
 from .schemas import SCENE_LABELS, ProbabilityResult
 
 
@@ -21,11 +24,7 @@ FILENAME_SCENES = {
 
 
 def _scene_from_filename(path: Path) -> str | None:
-    """从项目数据集命名中解析场景。
-
-    数据集文件名形如 ir_r1_base_air_000001.png。这个函数只作为
-    模型不可用时的可解释回退，正式评估仍应优先使用训练好的场景模型。
-    """
+    """从项目数据集命名中解析场景。"""
 
     tokens = path.stem.lower().replace("-", "_").split("_")
     for token in tokens:
@@ -37,105 +36,114 @@ def _scene_from_filename(path: Path) -> str | None:
 class SceneRecognizer:
     """场景识别适配器。
 
-    当前支持两条路径：
-    1. 加载image_processing训练出的SVM/joblib模型；
-    2. 模型缺失或推理失败时，使用文件名/图像统计规则回退。
-
-    返回统一的ProbabilityResult，包含label、confidence和四类概率，
-    方便后续和目标检测结果进行概率融合。
+    优先级：
+    1. feature SVM（image_processing / feature_infer）；
+    2. 可选 CNN 场景检查点（scene_runtime.predict_scene_cnn）；
+    3. 文件名 / 图像统计启发式回退。
     """
 
-    def __init__(self, model_path: Path | None = None, metadata_path: Path | None = None) -> None:
+    def __init__(
+        self,
+        model_path: Path | None = None,
+        metadata_path: Path | None = None,
+        *,
+        cnn_checkpoint: Path | None = None,
+        scene_threshold: float = 0.45,
+        calibration: dict[str, Any] | Path | None = None,
+    ) -> None:
         self.model_path = model_path
         self.metadata_path = metadata_path
-        self._model: Any | None = None
-        self._metadata: dict[str, Any] | None = None
+        self.cnn_checkpoint = cnn_checkpoint
+        self.scene_threshold = scene_threshold
+        self.calibration = self._load_calibration(calibration)
         self.warnings: list[str] = []
 
-    def _load(self) -> bool:
-        """加载场景模型和元数据。
-
-        元数据里保存训练时的输入特征列表、场景名称和入选特征。
-        推理时必须按同一列顺序构造DataFrame，否则sklearn模型会读错特征。
-        """
-
-        if self._model is not None and self._metadata is not None:
-            return True
-        if not self.model_path or not self.metadata_path:
-            return False
-        if not self.model_path.is_file() or not self.metadata_path.is_file():
-            return False
-        try:
-            import joblib
-
-            self._model = joblib.load(self.model_path)
-            self._metadata = json.loads(self.metadata_path.read_text(encoding="utf-8"))
-            return True
-        except Exception as exc:  # noqa: BLE001
-            self.warnings.append(f"Scene model load failed; fallback is used: {exc}")
-            self._model = None
-            self._metadata = None
-            return False
+    @staticmethod
+    def _load_calibration(calibration: dict[str, Any] | Path | None) -> dict[str, Any] | None:
+        if calibration is None:
+            return None
+        if isinstance(calibration, dict):
+            return calibration
+        path = Path(calibration)
+        if not path.is_file():
+            return None
+        return json.loads(path.read_text(encoding="utf-8"))
 
     def predict(self, image_path: Path, modality: str) -> ProbabilityResult:
-        """预测单张图像的场景。
-
-        先尝试模型推理；如果模型文件不存在、加载失败或特征不匹配，
-        就退回到可解释规则，并把原因放入warnings，避免静默失败。
-        """
-
         named_scene = _scene_from_filename(image_path)
-        if self._load():
+
+        if self.model_path and self.metadata_path:
             try:
-                return self._predict_with_model(image_path)
+                return self._predict_with_feature_svm(image_path)
             except Exception as exc:  # noqa: BLE001
-                self.warnings.append(f"Scene model inference failed; fallback is used: {exc}")
+                self.warnings.append(f"Scene SVM inference failed; trying next backend: {exc}")
+
+        if self.cnn_checkpoint and self.cnn_checkpoint.is_file():
+            try:
+                return self._predict_with_cnn(image_path)
+            except Exception as exc:  # noqa: BLE001
+                self.warnings.append(f"Scene CNN inference failed; fallback is used: {exc}")
+
         return self._predict_with_heuristic(image_path, modality, named_scene)
 
-    def _predict_with_model(self, image_path: Path) -> ProbabilityResult:
-        """使用训练好的特征SVM进行场景分类。"""
-
-        import pandas as pd
-
-        assert self._model is not None
-        assert self._metadata is not None
+    def _predict_with_feature_svm(self, image_path: Path) -> ProbabilityResult:
+        assert self.model_path is not None
+        assert self.metadata_path is not None
         features = extract_handcrafted_features(image_path)
-        input_features = list(self._metadata["input_features"])
-        missing = [name for name in input_features if name not in features]
-        if missing:
-            raise ValueError(f"missing features: {', '.join(missing[:5])}")
-        frame = pd.DataFrame([{name: features[name] for name in input_features}])
-        probabilities_raw = self._model.predict_proba(frame)[0]
-        scene_names = list(self._metadata.get("scene_names", SCENE_LABELS))
+        result = predict_scene_from_features(
+            image_path,
+            self.model_path,
+            self.metadata_path,
+            extracted=features,
+        )
         probabilities = {
-            name: round(float(value), 6)
-            for name, value in zip(scene_names, probabilities_raw)
+            name: float(result["probabilities"].get(name, 0.0)) for name in SCENE_LABELS
         }
-        label = max(probabilities, key=probabilities.get)
+        for name, value in result["probabilities"].items():
+            probabilities[name] = float(value)
+        label = result["scene"]
         return ProbabilityResult(
             label=label,
-            confidence=probabilities[label],
-            probabilities=probabilities,
+            confidence=float(result["confidence"]),
+            probabilities={key: round(value, 6) for key, value in probabilities.items()},
             source="feature_svm_model",
             details={
                 "model": str(self.model_path),
                 "metadata": str(self.metadata_path),
-                "selected_feature_count": len(self._metadata.get("selected_features", [])),
+                "selected_feature_count": int(result.get("selected_feature_count", 0)),
+                "backend": "scene_recognition.feature_infer.predict_scene_from_features",
+            },
+        )
+
+    def _predict_with_cnn(self, image_path: Path) -> ProbabilityResult:
+        assert self.cnn_checkpoint is not None
+        result = predict_scene_cnn(
+            image_path,
+            self.cnn_checkpoint,
+            scene_threshold=self.scene_threshold,
+        )
+        probabilities = {
+            name: float(result["probabilities"].get(name, 0.0)) for name in SCENE_LABELS
+        }
+        for name, value in result["probabilities"].items():
+            probabilities[name] = float(value)
+        # Prefer raw label for downstream fusion; keep uncertain as detail.
+        label = result["raw_label"] if result["label"] == "uncertain" else result["label"]
+        return ProbabilityResult(
+            label=label,
+            confidence=float(result["confidence"]),
+            probabilities={key: round(value, 6) for key, value in probabilities.items()},
+            source="scene_cnn_model",
+            details={
+                "checkpoint": result.get("checkpoint"),
+                "thresholded_label": result["label"],
+                "backend": "image_processing.scene_runtime.predict_scene_cnn",
             },
         )
 
     def _predict_with_heuristic(
         self, image_path: Path, modality: str, named_scene: str | None
     ) -> ProbabilityResult:
-        """无模型时的场景判断规则。
-
-        规则只依赖文件名和图像质量指标：
-        - 平滑、亮度较高更偏向air/sea；
-        - 纹理、边缘、噪声更强更偏向urban/forest；
-        - SAR模态对sea/urban给轻微加权。
-        这条路径用于演示和兜底，不应作为最终性能指标。
-        """
-
         if named_scene:
             probabilities = {name: 0.025 for name in SCENE_LABELS}
             probabilities[named_scene] = 0.925
@@ -169,34 +177,33 @@ class SceneRecognizer:
             confidence=round(probabilities[label], 6),
             probabilities={key: round(value, 6) for key, value in probabilities.items()},
             source="image_statistic_heuristic",
-            details={key: metrics[key] for key in ("contrast_std", "sharpness_gradient", "high_frequency_noise", "colorfulness")},
+            details={
+                key: metrics[key]
+                for key in ("contrast_std", "sharpness_gradient", "high_frequency_noise", "colorfulness")
+            },
         )
 
 
 def build_environment_state(
-    image_path: Path, modality_result: ProbabilityResult, scene_result: ProbabilityResult
+    image_path: Path,
+    modality_result: ProbabilityResult,
+    scene_result: ProbabilityResult,
+    *,
+    calibration: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """构造环境状态向量。
+    """构造环境状态向量，复用 image_processing.scene_runtime。"""
 
-    这是流程图中“场景分类结果”和“图像处理结果”之间的桥梁。
-    一方面保留人能看懂的high/medium/low等级，另一方面输出归一化
-    state_vector，方便后续决策模块或轻量模型直接消费。
-    """
-
-    metrics = quality_metrics(image_path)
-    levels = quality_levels(metrics)
-    return {
-        "sensor_type": modality_result.label,
-        "scene_label": scene_result.label,
-        "scene_confidence": scene_result.confidence,
-        **levels,
-        "raw_metrics": metrics,
-        "state_vector": {
-            "modality_confidence": round(modality_result.confidence, 6),
-            "scene_confidence": round(scene_result.confidence, 6),
-            "contrast_norm": round(min(float(metrics["contrast_std"]) / 100.0, 1.0), 6),
-            "clarity_norm": round(min(float(metrics["sharpness_gradient"]) / 18.0, 1.0), 6),
-            "noise_norm": round(min(float(metrics["high_frequency_noise"]) / 12.0, 1.0), 6),
-            "color_norm": round(min(float(metrics["colorfulness"]) / 35.0, 1.0), 6),
-        },
+    bundled = build_environment_and_policy(
+        image_path,
+        modality_result.label,
+        scene_result.label,
+        scene_result.confidence,
+        calibration=calibration,
+    )
+    environment = bundled["environment"]
+    environment["state_vector"] = {
+        "modality_confidence": round(modality_result.confidence, 6),
+        **environment.get("state_vector", {}),
     }
+    environment["policy_seed"] = bundled["decision"]
+    return environment

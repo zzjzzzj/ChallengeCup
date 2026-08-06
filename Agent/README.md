@@ -12,6 +12,22 @@
 
 面向汇报讲解的完整流程整理见 [EXPLANATION_FLOW.md](EXPLANATION_FLOW.md)。
 
+## 模块对接关系
+
+Agent 只做调度；可复用能力直接调用仓库既有模块：
+
+| Agent 阶段 | 复用模块 |
+|---|---|
+| 质量指标 / 增广建议 | `image_processing.scene_runtime` |
+| 手工特征 | `image_processing.feature_engineering.extract_one` |
+| 场景 SVM | `scene_recognition.feature_infer.predict_scene_from_features` |
+| 场景 CNN（可选） | `image_processing.scene_runtime.predict_scene_cnn` |
+| YOLO 标签解析 | `scene_recognition.detector_module.boxes` |
+| 目标裁剪分类 | `scene_recognition.target_classifier_module.infer` |
+| 场景决策策略基表 | `image_processing.scene_runtime.DEFAULT_POLICY` |
+
+一致性推理、记忆、损失代理仍由 Agent 自身完成。
+
 ## 单图运行
 
 ```powershell
@@ -33,7 +49,17 @@ python -m Agent.cli infer `
   --target-checkpoint scene_recognition\target_classifier_module\runs\resnet18_target_baseline_none\best.pt
 ```
 
-如果没有检测权重，Agent 会尝试读取图片同名 YOLO 标签，例如 `xxx.png` 对应 `xxx.txt`。这能让流程在训练权重缺失时仍然演示“框选目标 -> 目标类别 -> 组合约束”的完整链路。
+可选 CNN 场景后端与质量标定：
+
+```powershell
+python -m Agent.cli infer `
+  --image path\to\image.png `
+  --sensor ir `
+  --scene-cnn-checkpoint path\to\scene_cnn.pt `
+  --calibration path\to\calibration.json
+```
+
+如果没有检测权重，Agent 会尝试读取图片同名 YOLO 标签，例如 `xxx.png` 对应 `xxx.txt`。
 
 ## 批量运行
 
@@ -44,6 +70,22 @@ python -m Agent.cli batch `
   --manifest samples.csv `
   --output-dir Agent\runs\batch_demo
 ```
+
+## 数据准备 / 训练桥接
+
+下列子命令会转发到 `python train.py ...`，方便从 Agent 入口使用仓库流水线：
+
+```powershell
+python -m Agent.cli prepare-scene -- --dataset data\datasets_r1_base_train --output image_processing\artifacts
+python -m Agent.cli extract-scene-features -- --index image_processing\artifacts\scene_index.csv --output image_processing\artifacts\scene_features.csv
+python -m Agent.cli evaluate-scene -- --features image_processing\artifacts\scene_features.csv --output image_processing\runs\feature_eval_report
+python -m Agent.cli prepare-crops -- ...
+python -m Agent.cli prepare-detection -- ...
+python -m Agent.cli train-detector -- ...
+python -m Agent.cli train-target -- ...
+```
+
+`--` 之后的参数原样转发给对应 `train.py` 命令。
 
 ## 人工反馈与持续学习记忆
 
@@ -56,11 +98,9 @@ python -m Agent.cli feedback `
   --note "人工复核后修正"
 ```
 
-反馈会写入 `Agent/artifacts/agent_memory.jsonl`。后续可把这些记录作为经验回放、类别原型或增量训练清单的来源。
+反馈会写入 `Agent/artifacts/agent_memory.jsonl`。
 
 ## 损失公式辅助
-
-流程图中的损失可用下面命令汇总：
 
 ```powershell
 python -m Agent.cli loss `
