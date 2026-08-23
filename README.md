@@ -178,6 +178,8 @@ python train.py yolo `
 ```
 
 从零训练时增加 `--no-pretrained`。
+如果训练目录已经包含落盘的离线增广样本，建议增加 `--no-builtin-aug`，避免再叠加
+YOLO 的 mosaic、翻转、颜色和几何在线增广；最终配置会写入 `ablation_summary.json`。
 
 ResNet18-FPN：
 

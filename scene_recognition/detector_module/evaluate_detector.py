@@ -8,7 +8,6 @@ from typing import Callable
 
 import torch
 import yaml
-from ultralytics import YOLO
 
 from scene_recognition.detector_module.dataset import DetectionSample, read_scene_index
 from scene_recognition.detector_module.metrics import detection_metrics_to_dict
@@ -84,6 +83,8 @@ def build_evaluation_slices(
 
 
 def main() -> None:
+    from ultralytics import YOLO
+
     args = parse_args()
     for path in (args.model, args.data, args.index):
         if not path.is_file():

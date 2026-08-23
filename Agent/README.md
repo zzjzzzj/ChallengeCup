@@ -87,6 +87,53 @@ python -m Agent.cli train-target -- ...
 
 `--` 之后的参数原样转发给对应 `train.py` 命令。
 
+对已经完成离线增广的 YOLO 数据集，可通过 Agent 桥接入口关闭二次在线增广：
+
+```powershell
+python -m Agent.cli train-detector -- `
+  --data path\to\data.yaml `
+  --model path\to\local_yolo_checkpoint.pt `
+  --name offline_augmented_run `
+  --no-builtin-aug
+```
+
+## r2 类增量学习
+
+r2 在原四类后追加 `patrol_boat` 和 `armored_vehicle`，类别编号必须保持
+`0..5` 不变。增量数据只在本机读取，生成的绝对路径清单、权重和报告均位于
+Git 忽略目录。
+
+```powershell
+$env:R2_DATASET = "<本机 datasets_r2_inc_train 路径>"
+$env:BASE_INDEX = "image_processing\artifacts\scene_index.csv"
+$env:BASE_CHECKPOINT = "<本机四类基础模型 best.pt>"
+
+# 正式协议：r2 全部用于训练；val/test 必须来自独立固定数据。
+python -m Agent.cli prepare-continual -- `
+  --increment-dataset "$env:R2_DATASET" `
+  --base-index "$env:BASE_INDEX" `
+  --output scene_recognition\detector_module\artifacts\continual_r2
+
+# 回放基线；只使用本地 checkpoint，不会自动下载模型。
+python -m Agent.cli train-continual -- `
+  --data scene_recognition\detector_module\artifacts\continual_r2\data_replay.yaml `
+  --base-model "$env:BASE_CHECKPOINT" `
+  --strategy replay `
+  --output scene_recognition\detector_module\runs\continual_r2_replay
+
+# 固定 test 上计算 old-mAP、New-mAP、all-mAP 和 KRR。
+python -m Agent.cli evaluate-continual -- `
+  --data scene_recognition\detector_module\artifacts\continual_r2\data_replay.yaml `
+  --before "$env:BASE_CHECKPOINT" `
+  --after scene_recognition\detector_module\runs\continual_r2_replay\weights\best.pt `
+  --output scene_recognition\detector_module\runs\continual_r2_replay\continual_evaluation.json
+```
+
+若只有 `inc_train`、没有独立新增类测试集，可显式使用
+`--increment-val-ratio 0.1 --increment-test-ratio 0.1` 做本地冒烟测试；该划分来自训练注入，
+其分数不得作为正式 New-mAP。完整设计与验收口径见
+[`../docs/Agent持续学习完善说明.md`](../docs/Agent持续学习完善说明.md)。
+
 ## 人工反馈与持续学习记忆
 
 ```powershell

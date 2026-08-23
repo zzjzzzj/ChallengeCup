@@ -5,8 +5,9 @@
   2. `--eval-split` 可选 val/test（增广数据集没有 test 划分，原脚本固定评 test 会直接报错）；
   3. 结果统一写到 ablation_summary.json，便于跨run汇总成对比表。
 
-注意：ultralytics 自带在线增广（mosaic/翻转/缩放等）在两组里都保持开启且完全相同，
+默认情况下，ultralytics 自带在线增广（mosaic/翻转/缩放等）在两组里保持开启且完全相同，
 因此「增广集 vs 原始集」量出来的是**离线增广在在线增广之上的增量**，不是增广的全部价值。
+对于已经完成离线增广、需要隔离其效果的数据集，可显式使用 ``--no-builtin-aug``。
 """
 
 from __future__ import annotations
@@ -19,11 +20,13 @@ from datetime import datetime
 from pathlib import Path
 
 import torch
-import ultralytics
 import yaml
-from ultralytics import YOLO
 
 from scene_recognition.detector_module.metrics import detection_metrics_to_dict
+from scene_recognition.detector_module.train_detector import (
+    BUILTIN_AUGMENTATION,
+    DISABLED_AUGMENTATION,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RUNS = PROJECT_ROOT / "scene_recognition" / "detector_module" / "runs"
@@ -45,6 +48,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--name", required=True)
     parser.add_argument("--eval-split", default="val", choices=["val", "test"])
     parser.add_argument("--exist-ok", action="store_true")
+    parser.add_argument(
+        "--no-builtin-aug",
+        action="store_true",
+        help="关闭YOLO在线增广；用于只评估已经落盘的离线增广数据。",
+    )
     return parser.parse_args()
 
 
@@ -59,10 +67,21 @@ def read_class_names(data_yaml: Path) -> list[str]:
     return [str(name) for name in names]
 
 
+def resolve_augmentation(no_builtin_aug: bool) -> dict[str, float]:
+    """Return a copy so callers cannot mutate the shared baseline recipes."""
+
+    recipe = DISABLED_AUGMENTATION if no_builtin_aug else BUILTIN_AUGMENTATION
+    return dict(recipe)
+
+
 def main() -> None:
     args = parse_args()
     if not args.data.is_file():
         raise FileNotFoundError(f"数据配置不存在: {args.data}")
+
+    # Keep CLI help and config-only unit tests usable without the training extra.
+    import ultralytics
+    from ultralytics import YOLO
 
     pretrained = not args.no_pretrained
     # 从零训练必须同时满足：用 .yaml 建结构 + pretrained=False，二者缺一都会悄悄加载权重
@@ -70,6 +89,7 @@ def main() -> None:
 
     args.project.mkdir(parents=True, exist_ok=True)
     class_names = read_class_names(args.data)
+    augmentation = resolve_augmentation(args.no_builtin_aug)
     environment = {
         "started_at": datetime.now().isoformat(timespec="seconds"),
         "python": sys.version,
@@ -101,18 +121,9 @@ def main() -> None:
         cache=False,
         plots=True,
         verbose=True,
-        close_mosaic=10,
+        close_mosaic=0 if args.no_builtin_aug else 10,
         cos_lr=True,
-        hsv_h=0.0,
-        hsv_s=0.0,
-        hsv_v=0.15,
-        degrees=5.0,
-        translate=0.08,
-        scale=0.20,
-        fliplr=0.5,
-        flipud=0.0,
-        mosaic=0.6,
-        mixup=0.0,
+        **augmentation,
     )
 
     run_dir = Path(train_result.save_dir)
@@ -146,6 +157,8 @@ def main() -> None:
             "batch_size": args.batch_size,
             "device": args.device,
             "eval_split": args.eval_split,
+            "builtin_augmentation_disabled": args.no_builtin_aug,
+            "builtin_augmentation": augmentation,
         },
         "run_dir": str(run_dir.resolve()),
         "best_model": str(best_model_path.resolve()),

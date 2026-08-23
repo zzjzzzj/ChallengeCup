@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from scene_recognition.detector_module import CLASS_NAMES
+from scene_recognition.detector_module import ALL_CLASS_NAMES, BASE_CLASS_NAMES, CLASS_NAMES
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -14,23 +14,33 @@ def parse_class_list(text: str) -> list[str]:
     return [value.strip() for value in text.split(",") if value.strip()]
 
 
-def validate_partition(base_classes: list[str], rounds: list[list[str]]) -> None:
+def validate_partition(
+    base_classes: list[str],
+    rounds: list[list[str]],
+    class_order: list[str] | None = None,
+) -> None:
+    available_classes = class_order or CLASS_NAMES
     flattened = base_classes + [name for current_round in rounds for name in current_round]
-    unknown = sorted(set(flattened) - set(CLASS_NAMES))
+    unknown = sorted(set(flattened) - set(available_classes))
     if unknown:
         raise ValueError(f"未知目标类别: {', '.join(unknown)}")
     duplicates = sorted({name for name in flattened if flattened.count(name) > 1})
     if duplicates:
         raise ValueError(f"类别被重复分配: {', '.join(duplicates)}")
-    missing = sorted(set(CLASS_NAMES) - set(flattened))
+    missing = sorted(set(available_classes) - set(flattened))
     if missing:
         raise ValueError(f"以下类别未纳入协议: {', '.join(missing)}")
     if not base_classes or not rounds or any(not current_round for current_round in rounds):
         raise ValueError("协议必须包含非空基础类别和至少一轮非空增量类别")
 
 
-def build_protocol(base_classes: list[str], rounds: list[list[str]]) -> dict:
-    validate_partition(base_classes, rounds)
+def build_protocol(
+    base_classes: list[str],
+    rounds: list[list[str]],
+    class_order: list[str] | None = None,
+) -> dict:
+    available_classes = list(class_order or CLASS_NAMES)
+    validate_partition(base_classes, rounds, available_classes)
     learned = list(base_classes)
     stages = [
         {
@@ -56,7 +66,7 @@ def build_protocol(base_classes: list[str], rounds: list[list[str]]) -> dict:
     return {
         "protocol_version": "1.0",
         "purpose": "在官方增量数据发布前，用基础数据集验证多轮类增量训练、评估和抗遗忘接口。",
-        "class_order": CLASS_NAMES,
+        "class_order": available_classes,
         "stages": stages,
         "metrics": {
             "new_map": "当前轮新增类别的 mAP",
@@ -73,7 +83,12 @@ def build_protocol(base_classes: list[str], rounds: list[list[str]]) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="生成可复现的多轮类别增量测试协议")
-    parser.add_argument("--base", default="soldier,tank", help="逗号分隔的基础类别")
+    parser.add_argument("--base", help="逗号分隔的基础类别")
+    parser.add_argument(
+        "--classes-file",
+        type=Path,
+        help="类别文件；r2 使用包含六类的 classes.txt",
+    )
     parser.add_argument(
         "--round",
         action="append",
@@ -88,8 +103,29 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    round_values = args.rounds or ["small_aircraft", "warship"]
-    protocol = build_protocol(parse_class_list(args.base), [parse_class_list(x) for x in round_values])
+    if args.classes_file:
+        class_order = [
+            value.strip()
+            for value in args.classes_file.read_text(encoding="utf-8-sig").splitlines()
+            if value.strip()
+        ]
+    else:
+        class_order = list(CLASS_NAMES)
+
+    is_official_r2 = class_order == ALL_CLASS_NAMES
+    default_base = BASE_CLASS_NAMES if is_official_r2 else ["soldier", "tank"]
+    default_rounds = (
+        [",".join(name for name in ALL_CLASS_NAMES if name not in BASE_CLASS_NAMES)]
+        if is_official_r2
+        else ["small_aircraft", "warship"]
+    )
+    base_classes = parse_class_list(args.base) if args.base else list(default_base)
+    round_values = args.rounds or default_rounds
+    protocol = build_protocol(
+        base_classes,
+        [parse_class_list(x) for x in round_values],
+        class_order,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(protocol, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(protocol, ensure_ascii=False, indent=2))

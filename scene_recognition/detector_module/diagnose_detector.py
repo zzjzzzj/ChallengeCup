@@ -7,7 +7,6 @@ from collections import Counter
 from pathlib import Path
 
 import torch
-from ultralytics import YOLO
 
 from scene_recognition.detector_module import CLASS_NAMES
 from scene_recognition.detector_module.boxes import YoloBox, box_iou, parse_yolo_boxes, size_bucket
@@ -60,6 +59,8 @@ def collect_predictions(
     workers: int,
     device: str,
 ) -> dict[str, list[YoloBox]]:
+    from ultralytics import YOLO
+
     model = YOLO(str(model_path.resolve()))
     results = model.predict(
         source=[str(sample.image_path.resolve()) for sample in samples],

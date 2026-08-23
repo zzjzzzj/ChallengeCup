@@ -21,7 +21,10 @@ TRAIN_BRIDGES: dict[str, str] = {
     "prepare-crops": "crop-prepare",
     "prepare-detection": "prepare-detection",
     "prepare-comparison": "prepare-comparison",
+    "prepare-continual": "prepare-continual",
     "train-detector": "yolo",
+    "train-continual": "continual-yolo",
+    "evaluate-continual": "continual-evaluate",
     "train-resnet-detector": "resnet-detector",
     "train-target": "crop-classifier",
     "train-whole-target": "whole-classifier",
@@ -170,6 +173,11 @@ def run_train_bridge(args: argparse.Namespace) -> None:
     train_command = TRAIN_BRIDGES[args.command]
     train_script = PROJECT_ROOT / "train.py"
     forwarded = list(getattr(args, "forwarded", []) or [])
+    # argparse.REMAINDER keeps the conventional separator. It is only for the
+    # Agent parser and must not be forwarded to the child parser, otherwise the
+    # child treats every following option as a positional value.
+    if forwarded and forwarded[0] == "--":
+        forwarded = forwarded[1:]
     completed = subprocess.run(
         [sys.executable, str(train_script), train_command, *forwarded],
         cwd=PROJECT_ROOT,
@@ -261,7 +269,10 @@ def build_parser() -> argparse.ArgumentParser:
     _add_bridge_parser(sub, "prepare-crops", "bridge to train.py crop-prepare")
     _add_bridge_parser(sub, "prepare-detection", "bridge to train.py prepare-detection")
     _add_bridge_parser(sub, "prepare-comparison", "bridge to train.py prepare-comparison")
+    _add_bridge_parser(sub, "prepare-continual", "prepare a local r2 continual-learning protocol")
     _add_bridge_parser(sub, "train-detector", "bridge to train.py yolo")
+    _add_bridge_parser(sub, "train-continual", "fine-tune a local checkpoint on an incremental round")
+    _add_bridge_parser(sub, "evaluate-continual", "report New-mAP, old-class mAP and KRR")
     _add_bridge_parser(sub, "train-resnet-detector", "bridge to train.py resnet-detector")
     _add_bridge_parser(sub, "train-target", "bridge to train.py crop-classifier")
     _add_bridge_parser(sub, "train-whole-target", "bridge to train.py whole-classifier")

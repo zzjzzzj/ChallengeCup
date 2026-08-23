@@ -19,16 +19,18 @@ from .schemas import (
 # 场景-目标先验约束。
 ALLOWED_TARGETS_BY_SCENE = {
     "air": {"small_aircraft"},
-    "sea": {"warship"},
-    "urban": {"soldier", "tank"},
-    "forest": {"soldier", "tank"},
+    "sea": {"warship", "patrol_boat"},
+    "urban": {"soldier", "tank", "armored_vehicle"},
+    "forest": {"soldier", "tank", "armored_vehicle"},
 }
 
 SCENES_BY_TARGET = {
     "small_aircraft": {"air"},
     "warship": {"sea"},
+    "patrol_boat": {"sea"},
     "soldier": {"urban", "forest"},
     "tank": {"urban", "forest"},
+    "armored_vehicle": {"urban", "forest"},
 }
 
 # Agent 扩展权重；基表来自 image_processing.scene_runtime.DEFAULT_POLICY。

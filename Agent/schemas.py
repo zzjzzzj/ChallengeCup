@@ -4,10 +4,12 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from scene_recognition.detector_module import ALL_CLASS_NAMES
+
 
 SCENE_LABELS = ("air", "sea", "urban", "forest")
 MODALITY_LABELS = ("visible", "ir", "sar")
-TARGET_LABELS = ("soldier", "small_aircraft", "warship", "tank")
+TARGET_LABELS = tuple(ALL_CLASS_NAMES)
 
 SCENE_CN = {
     "air": "天空",
@@ -29,6 +31,8 @@ TARGET_CN = {
     "small_aircraft": "战斗机/小型飞机",
     "warship": "轮船/舰船",
     "tank": "坦克",
+    "patrol_boat": "巡逻艇",
+    "armored_vehicle": "装甲车辆",
     "unknown": "未知目标",
 }
 

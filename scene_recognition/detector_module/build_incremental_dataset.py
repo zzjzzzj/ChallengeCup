@@ -54,11 +54,16 @@ def load_protocol(protocol_path: Path, base: str | None, rounds: list[str] | Non
     return json.loads(protocol_path.read_text(encoding="utf-8"))
 
 
-def remap_boxes(boxes: list[YoloBox], label_classes: list[str]) -> list[YoloBox]:
+def remap_boxes(
+    boxes: list[YoloBox],
+    label_classes: list[str],
+    source_classes: list[str] | None = None,
+) -> list[YoloBox]:
+    source_classes = source_classes or CLASS_NAMES
     class_to_stage_id = {name: index for index, name in enumerate(label_classes)}
     remapped = []
     for box in boxes:
-        class_name = CLASS_NAMES[box.class_id]
+        class_name = source_classes[box.class_id]
         if class_name in class_to_stage_id:
             remapped.append(
                 YoloBox(
@@ -73,9 +78,14 @@ def remap_boxes(boxes: list[YoloBox], label_classes: list[str]) -> list[YoloBox]
     return remapped
 
 
-def has_any_class(boxes: list[YoloBox], class_names: list[str]) -> bool:
+def has_any_class(
+    boxes: list[YoloBox],
+    class_names: list[str],
+    source_classes: list[str] | None = None,
+) -> bool:
+    source_classes = source_classes or CLASS_NAMES
     selected = set(class_names)
-    return any(CLASS_NAMES[box.class_id] in selected for box in boxes)
+    return any(source_classes[box.class_id] in selected for box in boxes)
 
 
 def write_label(path: Path, boxes: list[YoloBox]) -> None:
@@ -91,7 +101,9 @@ def materialize_view(
     boxes_by_image: dict[Path, list[YoloBox]],
     view_dir: Path,
     view: StageView,
+    source_classes: list[str] | None = None,
 ) -> dict:
+    source_classes = source_classes or CLASS_NAMES
     images_dir = view_dir / "images"
     labels_dir = view_dir / "labels"
     images_dir.mkdir(parents=True, exist_ok=True)
@@ -104,9 +116,9 @@ def materialize_view(
         if sample.split != view.source_split:
             continue
         original_boxes = boxes_by_image[sample.image_path]
-        if not has_any_class(original_boxes, view.selector_classes):
+        if not has_any_class(original_boxes, view.selector_classes, source_classes):
             continue
-        remapped = remap_boxes(original_boxes, view.label_classes)
+        remapped = remap_boxes(original_boxes, view.label_classes, source_classes)
         if not remapped:
             continue
 
@@ -171,8 +183,9 @@ def write_stage_yaml(stage_dir: Path, role_stats: dict[str, dict], stage: dict) 
 
 def build_incremental_dataset(index_csv: Path, protocol: dict, output_dir: Path) -> dict:
     samples = read_scene_index(index_csv)
+    source_classes = list(protocol.get("class_order") or CLASS_NAMES)
     boxes_by_image = {
-        sample.image_path: parse_yolo_boxes(sample.label_path, len(CLASS_NAMES)) for sample in samples
+        sample.image_path: parse_yolo_boxes(sample.label_path, len(source_classes)) for sample in samples
     }
     output_dir.mkdir(parents=True, exist_ok=True)
     stages = []
@@ -181,7 +194,13 @@ def build_incremental_dataset(index_csv: Path, protocol: dict, output_dir: Path)
         role_stats = {}
         for view in stage_views(stage):
             role_dir = stage_dir / view.role
-            role_stats[view.role] = materialize_view(samples, boxes_by_image, role_dir, view)
+            role_stats[view.role] = materialize_view(
+                samples,
+                boxes_by_image,
+                role_dir,
+                view,
+                source_classes,
+            )
         yaml_paths = write_stage_yaml(stage_dir, role_stats, stage)
         stages.append(
             {
@@ -197,7 +216,7 @@ def build_incremental_dataset(index_csv: Path, protocol: dict, output_dir: Path)
     report = {
         "index": str(index_csv.resolve()),
         "output_dir": str(output_dir.resolve()),
-        "class_order": CLASS_NAMES,
+        "class_order": source_classes,
         "stages": stages,
         "notes": [
             "train_new excludes old-class-only images; train_replay includes all learned-class images.",

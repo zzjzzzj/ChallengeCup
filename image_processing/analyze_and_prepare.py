@@ -13,7 +13,8 @@ from PIL import Image, ImageStat
 
 
 NAME_RE = re.compile(
-    r"^(?P<sensor>ir|sar)_r1_base_(?P<scene>air|sea|urban|forest)_(?P<index>\d{6})$"
+    r"^(?P<sensor>ir|sar)_r(?P<round>\d+)_(?P<phase>base|inc)_"
+    r"(?P<scene>air|sea|urban|forest)_(?P<index>\d{6})$"
 )
 SCENES = ["air", "sea", "urban", "forest"]
 SENSORS = ["ir", "sar"]
@@ -97,14 +98,18 @@ def main() -> None:
     dimensions = Counter()
     modes = Counter()
 
-    parsed_by_group: defaultdict[tuple[str, str], list[tuple[int, Path]]] = defaultdict(list)
+    parsed_by_group: defaultdict[tuple[int, str, str, str], list[tuple[int, Path]]] = defaultdict(list)
     for path in image_paths:
         match = NAME_RE.match(path.stem)
         if not match:
             invalid_names.append(path.name)
             continue
-        sensor, scene, index = match.group("sensor"), match.group("scene"), int(match.group("index"))
-        parsed_by_group[(sensor, scene)].append((index, path))
+        sensor = match.group("sensor")
+        scene = match.group("scene")
+        data_round = int(match.group("round"))
+        phase = match.group("phase")
+        index = int(match.group("index"))
+        parsed_by_group[(data_round, phase, sensor, scene)].append((index, path))
 
     positions: dict[Path, tuple[int, int]] = {}
     for items in parsed_by_group.values():
@@ -116,7 +121,11 @@ def main() -> None:
         match = NAME_RE.match(path.stem)
         if not match:
             continue
-        sensor, scene, index = match.group("sensor"), match.group("scene"), int(match.group("index"))
+        sensor = match.group("sensor")
+        scene = match.group("scene")
+        data_round = int(match.group("round"))
+        phase = match.group("phase")
+        index = int(match.group("index"))
         label_path = path.with_suffix(".txt")
         if not label_path.exists():
             missing_labels.append(path.name)
@@ -150,6 +159,8 @@ def main() -> None:
                 "sensor": sensor,
                 "scene": scene,
                 "scene_id": SCENES.index(scene),
+                "data_round": data_round,
+                "data_phase": phase,
                 "sequence_index": index,
                 "split": split,
                 "width": width,
@@ -162,6 +173,12 @@ def main() -> None:
                 "box_count": boxes,
                 "sha256": digest,
             }
+        )
+
+    if not records:
+        raise ValueError(
+            "数据集中没有可识别的图像；文件名应符合 "
+            "<ir|sar>_r<轮次>_<base|inc>_<air|sea|urban|forest>_<六位序号>.png"
         )
 
     fieldnames = list(records[0].keys())
@@ -177,23 +194,48 @@ def main() -> None:
             writer.writerows(subset)
 
     exact_duplicate_groups = [names for names in hashes.values() if len(names) > 1]
-    stems = {(r["sensor"], r["scene"], r["sequence_index"]): r for r in records}
+    stems = {
+        (r["data_round"], r["data_phase"], r["sensor"], r["scene"], r["sequence_index"]): r
+        for r in records
+    }
     pair_rows: list[dict] = []
-    for scene in SCENES:
-        ids = sorted(
-            {idx for sensor, sc, idx in stems if sc == scene and ("ir", scene, idx) in stems and ("sar", scene, idx) in stems}
-        )
-        for idx in ids:
-            pair_rows.append(
+    round_phases = sorted({(r["data_round"], r["data_phase"]) for r in records})
+    for data_round, phase in round_phases:
+        for scene in SCENES:
+            ids = sorted(
                 {
-                    "scene": scene,
-                    "sequence_index": idx,
-                    "ir_image": stems[("ir", scene, idx)]["image_path"],
-                    "sar_image": stems[("sar", scene, idx)]["image_path"],
+                    idx
+                    for rd, ph, _sensor, sc, idx in stems
+                    if rd == data_round
+                    and ph == phase
+                    and sc == scene
+                    and (data_round, phase, "ir", scene, idx) in stems
+                    and (data_round, phase, "sar", scene, idx) in stems
                 }
             )
+            for idx in ids:
+                pair_rows.append(
+                    {
+                        "data_round": data_round,
+                        "data_phase": phase,
+                        "scene": scene,
+                        "sequence_index": idx,
+                        "ir_image": stems[(data_round, phase, "ir", scene, idx)]["image_path"],
+                        "sar_image": stems[(data_round, phase, "sar", scene, idx)]["image_path"],
+                    }
+                )
     with (output / "candidate_ir_sar_pairs.csv").open("w", newline="", encoding="utf-8-sig") as f:
-        writer = csv.DictWriter(f, fieldnames=["scene", "sequence_index", "ir_image", "sar_image"])
+        writer = csv.DictWriter(
+            f,
+            fieldnames=[
+                "data_round",
+                "data_phase",
+                "scene",
+                "sequence_index",
+                "ir_image",
+                "sar_image",
+            ],
+        )
         writer.writeheader()
         writer.writerows(pair_rows)
 

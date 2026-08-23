@@ -11,10 +11,38 @@ from .schemas import DetectionBox, TARGET_LABELS
 
 
 SCENE_TARGET_PRIORS = {
-    "air": {"small_aircraft": 0.82, "warship": 0.04, "soldier": 0.07, "tank": 0.07},
-    "sea": {"warship": 0.82, "small_aircraft": 0.08, "soldier": 0.05, "tank": 0.05},
-    "urban": {"soldier": 0.45, "tank": 0.42, "small_aircraft": 0.08, "warship": 0.05},
-    "forest": {"soldier": 0.48, "tank": 0.40, "small_aircraft": 0.06, "warship": 0.06},
+    "air": {
+        "small_aircraft": 0.82,
+        "warship": 0.03,
+        "soldier": 0.05,
+        "tank": 0.04,
+        "patrol_boat": 0.02,
+        "armored_vehicle": 0.04,
+    },
+    "sea": {
+        "warship": 0.50,
+        "patrol_boat": 0.35,
+        "small_aircraft": 0.05,
+        "soldier": 0.03,
+        "tank": 0.03,
+        "armored_vehicle": 0.04,
+    },
+    "urban": {
+        "soldier": 0.25,
+        "tank": 0.25,
+        "armored_vehicle": 0.36,
+        "small_aircraft": 0.05,
+        "warship": 0.04,
+        "patrol_boat": 0.05,
+    },
+    "forest": {
+        "soldier": 0.28,
+        "tank": 0.24,
+        "armored_vehicle": 0.36,
+        "small_aircraft": 0.04,
+        "warship": 0.03,
+        "patrol_boat": 0.05,
+    },
 }
 
 
@@ -66,6 +94,12 @@ class TargetClassifier:
             image = opened.convert("RGB")
             width, height = image.size
             for index, box in enumerate(detections):
+                # A legacy four-class crop classifier cannot classify the r2
+                # classes. Preserve a confident detector label instead of
+                # silently mapping it back to one of the old classes.
+                if box.class_name != "unknown" and box.class_name not in class_names:
+                    refined.append(box)
+                    continue
                 crop = image.crop(box.xyxy_pixels(width, height, padding_ratio=0.08))
                 prediction = predict_crop_image(runtime, crop)
                 class_id = int(prediction["predicted_id"])

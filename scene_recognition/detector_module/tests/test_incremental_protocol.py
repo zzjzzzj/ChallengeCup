@@ -22,6 +22,24 @@ class IncrementalProtocolTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "未纳入协议"):
             validate_partition(["soldier", "tank"], [["small_aircraft"]])
 
+    def test_supports_official_r2_six_class_protocol(self):
+        classes = [
+            "soldier",
+            "small_aircraft",
+            "warship",
+            "tank",
+            "patrol_boat",
+            "armored_vehicle",
+        ]
+        protocol = build_protocol(
+            classes[:4],
+            [["patrol_boat", "armored_vehicle"]],
+            classes,
+        )
+        self.assertEqual(protocol["class_order"], classes)
+        self.assertEqual(protocol["stages"][1]["old_classes"], classes[:4])
+        self.assertEqual(protocol["stages"][1]["all_learned_classes"], classes)
+
 
 if __name__ == "__main__":
     unittest.main()

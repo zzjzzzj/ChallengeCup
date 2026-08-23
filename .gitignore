@@ -8,6 +8,7 @@ __pycache__/
 venv/
 
 # Local datasets and generated experiment products
+数据集（不上传git）/
 data/
 dataset/
 datasets/

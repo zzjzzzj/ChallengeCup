@@ -186,3 +186,21 @@ Outputs:
 - `artifacts/incremental_dataset/incremental_dataset_summary.json`
 - `artifacts/incremental_dataset/stage_*/train_new.yaml`
 - `artifacts/incremental_dataset/stage_*/train_replay.yaml`
+
+## 官方 r2 六类增量协议
+
+原四类编号保持不变，r2 追加：`4=patrol_boat`、`5=armored_vehicle`。
+新的本地流水线提供：
+
+- `prepare_continual_dataset.py`：生成仅增量/回放训练清单，不复制源图像；
+- `train_continual_yolo.py`：从本地四类 checkpoint 运行普通微调或回放基线；
+- `evaluate_continual.py`：在同一固定 test 上计算 old-mAP、New-mAP、all-mAP 和 KRR。
+
+```powershell
+python train.py prepare-continual --help
+python train.py continual-yolo --help
+python train.py continual-evaluate --help
+```
+
+`datasets_r2_inc_train` 是训练注入，不是正式测试集。没有覆盖全部六类的独立 test
+时，评测报告会标记 `evaluation_ready=false`，不得用训练集留出分数替代正式 KRR。

@@ -8,9 +8,7 @@ from datetime import datetime
 from pathlib import Path
 
 import torch
-import ultralytics
 import yaml
-from ultralytics import YOLO
 
 from scene_recognition.detector_module.metrics import detection_metrics_to_dict
 
@@ -141,6 +139,9 @@ def read_class_names(data_yaml: Path) -> list[str]:
 
 
 def main() -> None:
+    import ultralytics
+    from ultralytics import YOLO
+
     args = parse_args()
     if not args.data.is_file():
         raise FileNotFoundError(

@@ -49,6 +49,23 @@ class AgentFlowTests(unittest.TestCase):
         self.assertGreaterEqual(report["consistency"]["original_invalid_count"], 1)
         self.assertIn(report["consistency"]["status"], {"invalid_combination", "repaired_by_target_scene_fusion"})
 
+    def test_r2_incremental_target_is_recognized_and_scene_consistent(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            image = root / "ir_r2_inc_sea_000001.png"
+            self._make_image(image)
+            image.with_suffix(".txt").write_text("4 0.5 0.5 0.25 0.20\n", encoding="utf-8")
+            config = AgentConfig.from_values(memory_path=root / "memory.jsonl", remember_runs=False)
+            report = IntelligentRecognitionAgent(config).run(
+                image,
+                sensor_hint="ir",
+                remember=False,
+            ).to_dict()
+
+        self.assertEqual(report["detections"][0]["class_name"], "patrol_boat")
+        self.assertEqual(report["final_scene"]["label"], "sea")
+        self.assertEqual(report["consistency"]["status"], "consistent")
+
     def test_loss_formula(self) -> None:
         result = combine_training_losses(
             l_box=1.0,

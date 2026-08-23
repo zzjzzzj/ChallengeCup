@@ -8,7 +8,6 @@ from pathlib import Path
 
 import torch
 import yaml
-from ultralytics import YOLO
 
 from scene_recognition.detector_module.resnet18_detector import YoloManifestDataset, detection_metrics
 
@@ -54,6 +53,8 @@ def evaluate_checkpoint(
     device: str,
     image_size: int,
 ) -> dict:
+    from ultralytics import YOLO
+
     model = YOLO(str(checkpoint))
     results = model.predict(
         source=[str(path) for path in dataset.image_paths],
