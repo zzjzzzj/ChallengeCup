@@ -1,0 +1,44 @@
+{
+  "protocol_name": "default_ir_sar_scene_class_incremental",
+  "description": "Editable first protocol: IR->SAR, air/sea->urban/forest, aircraft/warship->tank->soldier.",
+  "stages": [
+    {
+      "task_id": "task_1",
+      "name": "IR + air/sea + aircraft/warship",
+      "modalities": ["ir"],
+      "scenes": ["air", "sea"],
+      "classes": ["small_aircraft", "warship"],
+      "train_filter": {
+        "sensor": ["ir"],
+        "scene": ["air", "sea"],
+        "class_name": ["small_aircraft", "warship"]
+      },
+      "notes": "Stable old classes with high baseline accuracy."
+    },
+    {
+      "task_id": "task_2",
+      "name": "SAR modality increment + tank",
+      "modalities": ["ir", "sar"],
+      "scenes": ["air", "sea", "urban", "forest"],
+      "classes": ["small_aircraft", "warship", "tank"],
+      "train_filter": {
+        "sensor": ["ir", "sar"],
+        "class_name": ["small_aircraft", "warship", "tank"]
+      },
+      "notes": "Introduce SAR and tank while keeping old aircraft/warship."
+    },
+    {
+      "task_id": "task_3",
+      "name": "soldier hard target increment",
+      "modalities": ["ir", "sar"],
+      "scenes": ["urban", "forest"],
+      "classes": ["small_aircraft", "warship", "tank", "soldier"],
+      "train_filter": {
+        "sensor": ["ir", "sar"],
+        "scene": ["urban", "forest"],
+        "class_name": ["soldier", "tank"]
+      },
+      "notes": "Focus on soldier recall, hard sampling, copy-paste, and second-pass slicing."
+    }
+  ]
+}

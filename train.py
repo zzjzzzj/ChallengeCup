@@ -28,6 +28,9 @@ COMMANDS: dict[str, tuple[str, ...]] = {
         str(ROOT / "scene_recognition" / "experiments" / "run_detection_experiments.py"),
     ),
     "yolo-evaluate": ("-m", "scene_recognition.detector_module.evaluate_yolo_same_protocol"),
+    "ascend310b-package": (
+        str(ROOT / "deployment" / "ascend310b" / "build_ascend310b_package.py"),
+    ),
 }
 
 
@@ -53,6 +56,7 @@ def usage() -> str:
         "  resnet-detector     train one ResNet18-FPN detector",
         "  detection-matrix    run the final eight detection experiments",
         "  yolo-evaluate       re-evaluate YOLO with the shared AP implementation",
+        "  ascend310b-package  build a portable Ascend 310B inference package",
         "",
         "Run `python train.py <command> --help` for command-specific options.",
     ]

@@ -65,6 +65,7 @@ runs/
 # Temporary and presentation outputs
 tmp/
 output/
+dist/
 .playwright-cli/
 Users*/
 local-data/
