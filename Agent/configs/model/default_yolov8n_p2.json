@@ -1,0 +1,41 @@
+{
+  "model_name": "yolov8n-p2-continual",
+  "base_model": "yolov8n",
+  "use_p2_head": true,
+  "image_size": 768,
+  "class_names": ["soldier", "small_aircraft", "warship", "tank"],
+  "modality_names": ["ir", "sar"],
+  "scene_names": ["air", "sea", "urban", "forest"],
+  "context_fusion": {
+    "enabled": true,
+    "alpha": 0.20,
+    "beta": 0.10,
+    "learn_projection": true
+  },
+  "experts": {
+    "enabled": true,
+    "top_k": 2,
+    "names": [
+      "shared_stable_expert",
+      "ir_texture_expert",
+      "sar_scatter_expert",
+      "small_object_expert",
+      "complex_background_expert"
+    ],
+    "bottleneck_ratio": 0.25,
+    "anchor_consolidation": true
+  },
+  "continual": {
+    "replay_capacity": 200,
+    "teacher_enabled": true,
+    "prototype_momentum": 0.90,
+    "distill_temperature": 2.0
+  },
+  "second_evaluation": {
+    "enabled": true,
+    "uncertainty_threshold": 0.55,
+    "tile_grid": 2,
+    "tile_overlap": 0.20,
+    "soldier_confidence_delta": -0.10
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "experiment_name": "first_stage_soldier_improvement",
+  "goal": "Improve soldier detection before adding full sparse expert/prototype complexity.",
+  "steps": [
+    "yolov8n_baseline",
+    "yolov8n_p2",
+    "hard_soldier_resampling",
+    "target_level_copy_paste",
+    "adaptive_slicing_second_evaluation"
+  ],
+  "primary_metrics": ["soldier_map50", "soldier_recall", "overall_map50", "latency_ms"],
+  "notes": "Keep ablations isolated; do not enable all mechanisms at once."
+}
