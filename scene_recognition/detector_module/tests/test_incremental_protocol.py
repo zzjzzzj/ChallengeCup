@@ -40,6 +40,21 @@ class IncrementalProtocolTests(unittest.TestCase):
         self.assertEqual(protocol["stages"][1]["old_classes"], classes[:4])
         self.assertEqual(protocol["stages"][1]["all_learned_classes"], classes)
 
+    def test_supports_six_singleton_class_incremental_stages(self):
+        classes = [
+            "soldier",
+            "small_aircraft",
+            "warship",
+            "tank",
+            "patrol_boat",
+            "armored_vehicle",
+        ]
+        protocol = build_protocol([classes[0]], [[name] for name in classes[1:]], classes)
+        self.assertEqual(protocol["scenario"], "class_incremental")
+        self.assertEqual(len(protocol["stages"]), 6)
+        self.assertTrue(all(len(stage["new_classes"]) == 1 for stage in protocol["stages"]))
+        self.assertEqual(protocol["stages"][-1]["all_learned_classes"], classes)
+
 
 if __name__ == "__main__":
     unittest.main()

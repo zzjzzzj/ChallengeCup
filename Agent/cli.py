@@ -22,8 +22,10 @@ TRAIN_BRIDGES: dict[str, str] = {
     "prepare-detection": "prepare-detection",
     "prepare-comparison": "prepare-comparison",
     "prepare-continual": "prepare-continual",
+    "prepare-class-il": "prepare-class-il",
     "train-detector": "yolo",
     "train-continual": "continual-yolo",
+    "train-class-il": "class-il-yolo",
     "evaluate-continual": "continual-evaluate",
     "train-resnet-detector": "resnet-detector",
     "train-target": "crop-classifier",
@@ -270,8 +272,10 @@ def build_parser() -> argparse.ArgumentParser:
     _add_bridge_parser(sub, "prepare-detection", "bridge to train.py prepare-detection")
     _add_bridge_parser(sub, "prepare-comparison", "bridge to train.py prepare-comparison")
     _add_bridge_parser(sub, "prepare-continual", "prepare a local r2 continual-learning protocol")
+    _add_bridge_parser(sub, "prepare-class-il", "prepare six singleton Class-IL stages")
     _add_bridge_parser(sub, "train-detector", "bridge to train.py yolo")
     _add_bridge_parser(sub, "train-continual", "fine-tune a local checkpoint on an incremental round")
+    _add_bridge_parser(sub, "train-class-il", "run six-stage ER or DER Class-IL training")
     _add_bridge_parser(sub, "evaluate-continual", "report New-mAP, old-class mAP and KRR")
     _add_bridge_parser(sub, "train-resnet-detector", "bridge to train.py resnet-detector")
     _add_bridge_parser(sub, "train-target", "bridge to train.py crop-classifier")

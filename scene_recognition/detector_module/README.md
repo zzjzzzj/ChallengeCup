@@ -204,3 +204,17 @@ python train.py continual-evaluate --help
 
 `datasets_r2_inc_train` 是训练注入，不是正式测试集。没有覆盖全部六类的独立 test
 时，评测报告会标记 `evaluation_ready=false`，不得用训练集留出分数替代正式 KRR。
+
+## 六阶段 Class-IL（当前正式需求）
+
+当前协议已变更为六类依次训练，旧的“四类 → 六类”入口仅用于复现实验。新入口支持
+ER、DER 以及固定 200/500 图像缓冲池：
+
+```powershell
+python train.py prepare-class-il --help
+python train.py class-il-yolo --help
+```
+
+训练顺序为 `soldier → small_aircraft → warship → tank → patrol_boat → armored_vehicle`。
+初始 checkpoint 不能已经训练过这些项目类别。完整方法、隐私边界和四组对比命令见
+`docs/六阶段类增量学习-ER与DER.md`。

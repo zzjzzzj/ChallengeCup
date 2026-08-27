@@ -64,8 +64,10 @@ def build_protocol(
             }
         )
     return {
-        "protocol_version": "1.0",
-        "purpose": "在官方增量数据发布前，用基础数据集验证多轮类增量训练、评估和抗遗忘接口。",
+        "protocol_version": "2.0",
+        "scenario": "class_incremental",
+        "head_policy": "single_expanding_head",
+        "purpose": "按协议顺序逐类训练，验证多轮 Class-IL、回放和抗遗忘能力。",
         "class_order": available_classes,
         "stages": stages,
         "metrics": {
@@ -113,9 +115,9 @@ def main() -> None:
         class_order = list(CLASS_NAMES)
 
     is_official_r2 = class_order == ALL_CLASS_NAMES
-    default_base = BASE_CLASS_NAMES if is_official_r2 else ["soldier", "tank"]
+    default_base = [ALL_CLASS_NAMES[0]] if is_official_r2 else ["soldier", "tank"]
     default_rounds = (
-        [",".join(name for name in ALL_CLASS_NAMES if name not in BASE_CLASS_NAMES)]
+        list(ALL_CLASS_NAMES[1:])
         if is_official_r2
         else ["small_aircraft", "warship"]
     )
