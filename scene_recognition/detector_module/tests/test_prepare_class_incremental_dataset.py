@@ -15,8 +15,9 @@ from test_support import workspace_test_directory
 
 
 class ClassIncrementalPreparationTests(unittest.TestCase):
-    def make_dataset(self, root: Path) -> Path:
-        for split in ("train", "val"):
+    def make_dataset(self, root: Path, *, include_test: bool = False) -> Path:
+        splits = ("train", "val", "test") if include_test else ("train", "val")
+        for split in splits:
             (root / "images" / split).mkdir(parents=True)
             (root / "labels" / split).mkdir(parents=True)
         for class_id in range(len(ALL_CLASS_NAMES)):
@@ -33,18 +34,25 @@ class ClassIncrementalPreparationTests(unittest.TestCase):
                 f"{class_id} 0.5 0.5 0.2 0.2\n",
                 encoding="utf-8",
             )
+            if include_test:
+                image = root / "images" / "test" / f"test_c{class_id}.png"
+                Image.new("RGB", (32, 24), color=(20 + class_id, 30, 20)).save(image)
+                (root / "labels" / "test" / f"test_c{class_id}.txt").write_text(
+                    f"{class_id} 0.5 0.5 0.2 0.2\n",
+                    encoding="utf-8",
+                )
+        data_config = {
+            "path": str(root),
+            "train": "images/train",
+            "val": "images/val",
+            "nc": len(ALL_CLASS_NAMES),
+            "names": {index: name for index, name in enumerate(ALL_CLASS_NAMES)},
+        }
+        if include_test:
+            data_config["test"] = "images/test"
         data_yaml = root / "data.yaml"
         data_yaml.write_text(
-            yaml.safe_dump(
-                {
-                    "path": str(root),
-                    "train": "images/train",
-                    "val": "images/val",
-                    "nc": len(ALL_CLASS_NAMES),
-                    "names": {index: name for index, name in enumerate(ALL_CLASS_NAMES)},
-                },
-                sort_keys=False,
-            ),
+            yaml.safe_dump(data_config, sort_keys=False),
             encoding="utf-8",
         )
         return data_yaml
@@ -110,6 +118,22 @@ class ClassIncrementalPreparationTests(unittest.TestCase):
             for image_path in current_paths:
                 boxes = parse_yolo_boxes(resolve_label_path(image_path), 2)
                 self.assertEqual({box.class_id for box in boxes}, {1})
+
+    def test_materializes_independent_test_views_for_each_stage(self) -> None:
+        with workspace_test_directory("class-il-test") as root:
+            report = prepare_class_incremental_dataset(
+                self.make_dataset(root / "source", include_test=True),
+                root / "prepared",
+                buffer_sizes=(2,),
+            )
+            self.assertEqual(report["evaluation"]["split"], "test")
+            self.assertTrue(report["evaluation"]["official"])
+            self.assertFalse(report["evaluation"]["competition_official"])
+            for stage in report["stages"]:
+                self.assertIsNotNone(stage["test"])
+                data_yaml = Path(stage["buffers"]["2"]["data_yaml"])
+                data_config = yaml.safe_load(data_yaml.read_text(encoding="utf-8"))
+                self.assertIn("test", data_config)
 
 
 if __name__ == "__main__":

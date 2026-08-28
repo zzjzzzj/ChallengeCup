@@ -122,6 +122,9 @@ def validate_experiment(
     if buffer_size not in BUFFER_SIZE_CHOICES:
         raise ValueError(f"buffer size 只允许 {BUFFER_SIZE_CHOICES}")
 
+    evaluation_split = str(protocol.get("evaluation", {}).get("split", "val"))
+    if evaluation_split not in {"val", "test"}:
+        raise ValueError(f"协议 evaluation split 非法: {evaluation_split}")
     plan: list[dict] = []
     for stage in protocol["stages"]:
         buffer = stage.get("buffers", {}).get(str(buffer_size))
@@ -131,6 +134,9 @@ def validate_experiment(
         expected_names = stage["all_learned_classes"]
         if _read_yaml_names(data_yaml) != expected_names:
             raise ValueError(f"第 {stage['stage']} 阶段 YAML 类别与协议不一致")
+        data_config = yaml.safe_load(data_yaml.read_text(encoding="utf-8"))
+        if evaluation_split == "test" and not data_config.get("test"):
+            raise ValueError(f"第 {stage['stage']} 阶段缺少独立 test 清单")
         replay_manifest = Path(buffer["training"]["replay_manifest"])
         replay_paths = _read_nonempty_paths(replay_manifest)
         expected_replay = int(buffer["training"]["replay_images"])
@@ -150,6 +156,7 @@ def validate_experiment(
                 "data_yaml": str(data_yaml.resolve()),
                 "replay_manifest": str(replay_manifest.resolve()),
                 "replay_images": len(replay_paths),
+                "evaluation_split": evaluation_split,
             }
         )
     return plan
@@ -202,11 +209,17 @@ def _make_der_trainer(context: DERContext):
     return ReplayAwareDERTrainer
 
 
-def _metric_matrix(stage_results: list[dict], class_order: list[str], metric: str) -> dict:
+def _metric_matrix(
+    stage_results: list[dict],
+    class_order: list[str],
+    metric: str,
+    evaluation_split: str,
+) -> dict:
     rows: list[dict[str, float | None]] = []
+    result_key = "validation" if evaluation_split == "val" else "test"
     for result in stage_results:
         learned = set(result["learned_classes"])
-        per_class = result["validation"]["per_class"]
+        per_class = result[result_key]["per_class"]
         rows.append(
             {
                 name: (
@@ -248,16 +261,32 @@ def _metric_matrix(stage_results: list[dict], class_order: list[str], metric: st
     }
 
 
-def build_class_incremental_metrics(stage_results: list[dict], class_order: list[str]) -> dict:
+def build_class_incremental_metrics(
+    stage_results: list[dict],
+    class_order: list[str],
+    evaluation_split: str = "val",
+) -> dict:
     if len(stage_results) != len(class_order):
         raise ValueError("性能矩阵必须包含每个类别对应的一个阶段")
+    if evaluation_split not in {"val", "test"}:
+        raise ValueError("evaluation_split 必须为 val 或 test")
+    official = evaluation_split == "test"
     return {
         "class_order": class_order,
-        "map50": _metric_matrix(stage_results, class_order, "map50"),
-        "map50_95": _metric_matrix(stage_results, class_order, "map50_95"),
-        "evaluation_split": "val",
-        "official": False,
-        "reason": "当前六类合体数据集没有独立 test；该矩阵用于本地验证与方法对比。",
+        "map50": _metric_matrix(stage_results, class_order, "map50", evaluation_split),
+        "map50_95": _metric_matrix(
+            stage_results, class_order, "map50_95", evaluation_split
+        ),
+        "evaluation_split": evaluation_split,
+        "official": official,
+        "independent_holdout": official,
+        "competition_official": False,
+        "reason": (
+            "本地独立 test 只用于阶段后评估，不参与早停或 checkpoint 选择；"
+            "它不是主办方隐藏测试集。"
+            if official
+            else "数据集没有独立 test；该矩阵仅用于本地验证与方法对比。"
+        ),
     }
 
 
@@ -304,6 +333,9 @@ def run_class_incremental(args: argparse.Namespace) -> dict:
     stop_after_stage = min(args.stop_after_stage, len(plan))
     selected_plan = plan[:stop_after_stage]
     selected_stages = protocol["stages"][:stop_after_stage]
+    evaluation_split = str(protocol.get("evaluation", {}).get("split", "val"))
+    if evaluation_split not in {"val", "test"}:
+        raise ValueError(f"协议 evaluation split 非法: {evaluation_split}")
     if args.dry_run:
         return {
             "status": "dry_run_ok",
@@ -311,6 +343,7 @@ def run_class_incremental(args: argparse.Namespace) -> dict:
             "method": args.method.upper(),
             "buffer_size": args.buffer_size,
             "initial_model": str(args.initial_model.resolve()),
+            "evaluation_split": evaluation_split,
             "stages": selected_plan,
         }
     if args.output.exists() and any(args.output.iterdir()):
@@ -375,6 +408,24 @@ def run_class_incremental(args: argparse.Namespace) -> dict:
             verbose=False,
         )
         validation = detection_metrics_to_dict(validation_result, stage["all_learned_classes"])
+        test_evaluation = None
+        if evaluation_split == "test":
+            test_result = trained.val(
+                data=str(data_yaml.resolve()),
+                split="test",
+                imgsz=args.image_size,
+                batch=args.batch_size,
+                workers=args.workers,
+                device=args.device,
+                project=str(run_dir),
+                name="class_il_test",
+                exist_ok=True,
+                plots=not args.no_plots,
+                verbose=False,
+            )
+            test_evaluation = detection_metrics_to_dict(
+                test_result, stage["all_learned_classes"]
+            )
         stage_summary = {
             "stage": stage_number,
             "task_id": stage["task_id"],
@@ -387,6 +438,7 @@ def run_class_incremental(args: argparse.Namespace) -> dict:
             "best_model": str(best_model.resolve()),
             "data_yaml": str(data_yaml.resolve()),
             "validation": validation,
+            "test": test_evaluation,
             "elapsed_seconds": round(time.perf_counter() - stage_started, 3),
             "dark_targets": (
                 {
@@ -439,7 +491,11 @@ def run_class_incremental(args: argparse.Namespace) -> dict:
         "final_model": str(previous_checkpoint),
         "stages": stage_results,
         "continual_metrics": (
-            build_class_incremental_metrics(stage_results, protocol["task_order"])
+            build_class_incremental_metrics(
+                stage_results,
+                protocol["task_order"],
+                evaluation_split=evaluation_split,
+            )
             if completed_protocol
             else {
                 "available": False,

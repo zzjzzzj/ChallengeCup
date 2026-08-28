@@ -14,9 +14,9 @@ T5 patrol_boat
 T6 armored_vehicle
 ```
 
-阶段 `Tt` 的普通训练标注只包含第 `t` 个类别；验证标注包含 `T1..Tt` 的全部已见
-类别。未来类别标签不会进入当前训练视图。检测头从 1 类逐步扩展到 6 类，上一阶段
-checkpoint 是下一阶段的初始化模型。
+阶段 `Tt` 的普通训练标注只包含第 `t` 个类别；验证与测试标注包含 `T1..Tt` 的全部
+已见类别。未来类别标签不会进入当前训练视图。检测头从 1 类逐步扩展到 6 类，上一
+阶段 checkpoint 是下一阶段的初始化模型。
 
 初始模型不能使用已经训练过项目四类的 checkpoint，否则在 T1 就已经见过
 `small_aircraft`、`warship` 和 `tank`，构成类别泄漏。允许使用本地通用预训练模型或
@@ -71,10 +71,27 @@ L_DER = L_box + L_cls + L_dfl
 
 ## 5. 本地运行
 
-先指定本地路径：
+原始合体数据集只有 train/val 时，先保留 train 不动，并将未增广留出集按原图组分层
+拆成 val/test。默认 `--test-fraction 0.5` 指 test 占原留出集的一半；同一原图及其
+增广版本不会跨集合：
 
 ```powershell
-$env:CLASS_IL_DATA = "<六类合体数据集的 data.yaml>"
+python train.py split-yolo `
+  --data "<原始六类合体数据集>\data.yaml" `
+  --output "<本地新数据目录>" `
+  --test-fraction 0.5 `
+  --seed 42
+```
+
+当前本机按 `seed=42` 生成的划分为 train 2828 张（707 个原图组）、val 92 张、
+test 91 张。`patrol_boat` 和 `armored_vehicle` 在 val/test 中各有 7/7 个原图；
+三个集合的原图组交集为 0。划分清单与完整分类别统计保存在新数据目录的
+`split_summary.json`，原始合体数据集保持不变。
+
+随后指定新数据 YAML 和本地初始模型：
+
+```powershell
+$env:CLASS_IL_DATA = "<带独立 test 的六类数据集 data.yaml>"
 $env:CLASS_IL_INIT = "<本地通用预训练模型或架构 YAML>"
 ```
 
@@ -131,15 +148,18 @@ python train.py class-il-yolo `
 - 分类别 mAP@0.5 与 mAP@0.5:0.95；
 - DER 暗响应参数和阶段耗时。
 
-完整训练报告输出六行类别性能矩阵，并计算：
+每轮训练和早停只读取 val；阶段结束后才在 test 上评估。完整训练报告输出六行类别
+性能矩阵，并计算：
 
 - 最终六类平均 mAP；
 - Average Incremental Accuracy；
 - Average Forgetting；
 - Backward Transfer（BWT）。
 
-当前合体数据集只有 train/val，没有独立 test，因此报告会明确标记
-`official=false`。val 结果可以用于本地方法筛选，但不能作为最终正式成绩。
+输入 YAML 含独立 test 时，报告使用 test 性能矩阵并标记 `official=true`；该字段只
+表示本地实验协议具备独立留出集，同时另记 `competition_official=false`，不能冒充
+主办方隐藏测试。若继续使用旧的 train/val 配置，则自动退回 val 并标记
+`official=false`。测试集不得用于调参、早停或 checkpoint 选择。
 
 ## 7. Task-IL 扩展边界
 

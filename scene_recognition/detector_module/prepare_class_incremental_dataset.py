@@ -1,9 +1,9 @@
 """Build a six-stage, local-only class-incremental YOLO protocol.
 
 Each stage introduces exactly one class.  Training views expose labels for the
-current class plus a fixed-capacity replay buffer; validation views expose all
-classes learned so far.  Images are hard-linked when possible and copied only
-when the filesystem cannot create a hard link.
+current class plus a fixed-capacity replay buffer; validation and optional test
+views expose all classes learned so far.  Images are hard-linked when possible
+and copied only when the filesystem cannot create a hard link.
 """
 
 from __future__ import annotations
@@ -351,6 +351,8 @@ def materialize_validation_view(
     val_samples: list[SourceSample],
     learned_class_ids: set[int],
     output_dir: Path,
+    *,
+    split: str = "val",
 ) -> dict:
     images_dir = output_dir / "images"
     labels_dir = output_dir / "labels"
@@ -363,12 +365,12 @@ def materialize_validation_view(
         boxes = [box for box in sample.boxes if box.class_id in learned_class_ids]
         if not boxes:
             continue
-        target_image = images_dir / _materialized_name(sample.image_path, "val", None)
+        target_image = images_dir / _materialized_name(sample.image_path, split, None)
         link_modes[_link_or_copy(sample.image_path, target_image)] += 1
         _write_label(labels_dir / f"{target_image.stem}.txt", boxes)
         manifest.append(target_image.resolve().as_posix())
         object_counts.update(box.class_id for box in boxes)
-    manifest_path = output_dir / "val.txt"
+    manifest_path = output_dir / f"{split}.txt"
     manifest_path.write_text("\n".join(manifest) + ("\n" if manifest else ""), encoding="utf-8")
     return {
         "images": len(manifest),
@@ -383,6 +385,7 @@ def _write_stage_yaml(
     train_manifest: str,
     val_manifest: str,
     learned_names: list[str],
+    test_manifest: str | None = None,
 ) -> str:
     payload = {
         "train": train_manifest,
@@ -390,6 +393,8 @@ def _write_stage_yaml(
         "nc": len(learned_names),
         "names": {index: name for index, name in enumerate(learned_names)},
     }
+    if test_manifest:
+        payload["test"] = test_manifest
     path.write_text(yaml.safe_dump(payload, allow_unicode=True, sort_keys=False), encoding="utf-8")
     return str(path.resolve())
 
@@ -443,6 +448,7 @@ def prepare_class_incremental_dataset(
 
     train_images = resolve_split_images(config, "train", dataset_root, data_yaml.parent)
     val_images = resolve_split_images(config, "val", dataset_root, data_yaml.parent)
+    test_images = resolve_split_images(config, "test", dataset_root, data_yaml.parent)
     if not val_images:
         raise ValueError("Class-IL 每阶段必须有固定 val")
     if provenance_manifest is None:
@@ -451,6 +457,7 @@ def prepare_class_incremental_dataset(
     provenance = read_provenance(provenance_manifest)
     train_samples = scan_samples(train_images, "train", len(dataset_names), provenance)
     val_samples = scan_samples(val_images, "val", len(dataset_names), provenance)
+    test_samples = scan_samples(test_images, "test", len(dataset_names), provenance)
 
     output_dir.mkdir(parents=True, exist_ok=True)
     stages: list[dict] = []
@@ -465,6 +472,18 @@ def prepare_class_incremental_dataset(
             stage_dir / "val_all",
         )
         total_materialization.update(val_stats["materialization"])
+        test_stats = (
+            materialize_validation_view(
+                test_samples,
+                set(range(stage_number)),
+                stage_dir / "test_all",
+                split="test",
+            )
+            if test_samples
+            else None
+        )
+        if test_stats is not None:
+            total_materialization.update(test_stats["materialization"])
         buffers: dict[str, dict] = {}
         for buffer_size in buffer_sizes:
             replay_before = select_balanced_buffer(
@@ -492,6 +511,7 @@ def prepare_class_incremental_dataset(
                 train_stats["manifest"],
                 val_stats["manifest"],
                 learned_names,
+                test_stats["manifest"] if test_stats is not None else None,
             )
             replay_before_path = stage_dir / f"buffer_before_{buffer_size}.json"
             replay_before_payload = _buffer_payload(replay_before, ordered_names)
@@ -528,6 +548,7 @@ def prepare_class_incremental_dataset(
                 "old_classes": ordered_names[:class_id],
                 "all_learned_classes": learned_names,
                 "validation": val_stats,
+                "test": test_stats,
                 "buffers": buffers,
             }
         )
@@ -545,6 +566,19 @@ def prepare_class_incremental_dataset(
         "source_statistics": {
             "train_images": len(train_samples),
             "val_images": len(val_samples),
+            "test_images": len(test_samples),
+        },
+        "evaluation": {
+            "split": "test" if test_samples else "val",
+            "official": bool(test_samples),
+            "independent_holdout": bool(test_samples),
+            "competition_official": False,
+            "scope": "local_experiment_protocol",
+            "test_usage": (
+                "post_stage_evaluation_only_not_checkpoint_selection"
+                if test_samples
+                else "unavailable"
+            ),
         },
         "stages": stages,
         "privacy": {

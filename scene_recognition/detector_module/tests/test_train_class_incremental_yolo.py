@@ -37,6 +37,19 @@ class ClassIncrementalMetricTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "每个类别"):
             build_class_incremental_metrics([], ALL_CLASS_NAMES)
 
+    def test_marks_independent_test_matrix_official(self) -> None:
+        stages = [self.make_stage(stage) for stage in range(1, 7)]
+        for stage in stages:
+            stage["test"] = stage["validation"]
+        report = build_class_incremental_metrics(
+            stages,
+            ALL_CLASS_NAMES,
+            evaluation_split="test",
+        )
+        self.assertTrue(report["official"])
+        self.assertFalse(report["competition_official"])
+        self.assertEqual(report["evaluation_split"], "test")
+
 
 if __name__ == "__main__":
     unittest.main()

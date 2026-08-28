@@ -21,6 +21,7 @@ TRAIN_BRIDGES: dict[str, str] = {
     "prepare-crops": "crop-prepare",
     "prepare-detection": "prepare-detection",
     "prepare-comparison": "prepare-comparison",
+    "split-yolo": "split-yolo",
     "prepare-continual": "prepare-continual",
     "prepare-class-il": "prepare-class-il",
     "train-detector": "yolo",
@@ -271,6 +272,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_bridge_parser(sub, "prepare-crops", "bridge to train.py crop-prepare")
     _add_bridge_parser(sub, "prepare-detection", "bridge to train.py prepare-detection")
     _add_bridge_parser(sub, "prepare-comparison", "bridge to train.py prepare-comparison")
+    _add_bridge_parser(sub, "split-yolo", "create leakage-safe train/val/test splits")
     _add_bridge_parser(sub, "prepare-continual", "prepare a local r2 continual-learning protocol")
     _add_bridge_parser(sub, "prepare-class-il", "prepare six singleton Class-IL stages")
     _add_bridge_parser(sub, "train-detector", "bridge to train.py yolo")

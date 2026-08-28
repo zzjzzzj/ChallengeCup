@@ -116,8 +116,10 @@ python -m scene_recognition.detector_module.compare_augmentation `
   --output docs/增广对照实验.md
 ```
 
-增广数据集的配置只有 train/val 没有 test，脚本会自动在 val 上评估，
-并把口径写进 `baseline_summary.json` 的 `evaluation_split` 字段，不会静默冒充测试集指标。
+原始增广合体数据集的配置只有 train/val。可先运行 `python train.py split-yolo`
+将现有训练集保持不变，并按原图来源把未增广留出集拆成 val/test；脚本会把同一原图的
+所有增广版本锁定在同一集合。仍使用旧配置时，训练脚本会在 val 上评估并明确记录口径，
+不会静默冒充测试集指标。
 
 ### 从零训练对照
 
@@ -211,6 +213,7 @@ python train.py continual-evaluate --help
 ER、DER 以及固定 200/500 图像缓冲池：
 
 ```powershell
+python train.py split-yolo --help
 python train.py prepare-class-il --help
 python train.py class-il-yolo --help
 ```
