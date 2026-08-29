@@ -61,9 +61,15 @@ def run_export(checkpoint: Path, data_yaml: Path, output_dir: Path, image_size: 
 
 def copy_runtime_files(output_dir: Path) -> None:
     for name in [
+        "cascade_classes_6.txt",
+        "infer_cascade_npu.py",
+        "infer_yolov8_onnx.py",
         "infer_yolov8_om.py",
         "convert_onnx_to_om.sh",
+        "run_cascade_npu.sh",
+        "run_onnx_cpu.sh",
         "run_infer.sh",
+        "requirements-onnx-cpu.txt",
         "requirements-runtime.txt",
     ]:
         shutil.copy2(DEPLOYMENT_DIR / name, output_dir / name)
@@ -130,8 +136,9 @@ export SOC_VERSION=Ascend310B4
 bash convert_onnx_to_om.sh detector_yolov8n_bs1.onnx detector_yolov8n_{image_size}_bs1
 
 python3 infer_yolov8_om.py \\
-  --model detector_yolov8n_{image_size}_bs1.om \\
+  --model detector_yolov8n_bs1.onnx \\
   --image demo.png \\
+  --soc-version Ascend310B4 \\
   --metadata package_metadata.json \\
   --output result.json \\
   --save-image outputs
@@ -139,6 +146,18 @@ python3 infer_yolov8_om.py \\
 
 Replace `Ascend310B4` with the exact value reported by your device.
 The Python runtime does not need PyTorch or Ultralytics.
+
+If you want to run the already exported ONNX model on CPU first:
+
+```bash
+python3 -m pip install -r requirements-onnx-cpu.txt
+python3 infer_yolov8_onnx.py \\
+  --model detector_yolov8n_bs1.onnx \\
+  --image demo.png \\
+  --metadata package_metadata.json \\
+  --output result_onnx_cpu.json \\
+  --save-image outputs_onnx_cpu
+```
 """.format(
         package_name=output_dir.name,
         image_size=args.image_size,

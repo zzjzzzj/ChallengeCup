@@ -34,6 +34,9 @@ COMMANDS: dict[str, tuple[str, ...]] = {
     "ascend310b-package": (
         str(ROOT / "deployment" / "ascend310b" / "build_ascend310b_package.py"),
     ),
+    "ascend310b-cascade": (
+        str(ROOT / "deployment" / "ascend310b" / "infer_cascade_npu.py"),
+    ),
 }
 
 
@@ -63,6 +66,7 @@ def usage() -> str:
         "  detection-matrix    run the final eight detection experiments",
         "  yolo-evaluate       re-evaluate YOLO with the shared AP implementation",
         "  ascend310b-package  build a portable Ascend 310B inference package",
+        "  ascend310b-cascade  run six-class plus single-class expert NPU inference",
         "",
         "Run `python train.py <command> --help` for command-specific options.",
     ]

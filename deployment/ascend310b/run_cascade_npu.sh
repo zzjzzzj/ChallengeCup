@@ -10,4 +10,4 @@ elif [ -f /usr/local/Ascend/ascend-toolkit/latest/set_env.sh ]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-python3 "${SCRIPT_DIR}/infer_yolov8_om.py" "$@"
+python3 "${SCRIPT_DIR}/infer_cascade_npu.py" "$@"

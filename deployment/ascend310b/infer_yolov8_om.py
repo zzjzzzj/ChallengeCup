@@ -8,6 +8,8 @@ It is compatible with Python 3.9 and expects a static batch=1 YOLOv8 export.
 
 import argparse
 import json
+import os
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,6 +24,83 @@ ACL_MEM_MALLOC_HUGE_FIRST = 0
 ACL_MEMCPY_HOST_TO_DEVICE = 1
 ACL_MEMCPY_DEVICE_TO_HOST = 2
 IMAGE_EXTENSIONS = {".bmp", ".jpeg", ".jpg", ".png", ".tif", ".tiff"}
+
+
+def resolve_soc_version(cli_value: Optional[str]) -> str:
+    soc_version = cli_value or os.environ.get("SOC_VERSION")
+    if not soc_version:
+        raise SystemExit(
+            "SOC version is required when converting ONNX to OM. "
+            "Pass --soc-version Ascend310B4 or export SOC_VERSION=Ascend310B4."
+        )
+    return soc_version
+
+
+def om_path_for_onnx(
+    onnx_path: Path,
+    image_size: int,
+    soc_version: str,
+    om_cache_dir: Optional[Path],
+) -> Path:
+    output_dir = om_cache_dir if om_cache_dir is not None else onnx_path.parent
+    output_dir.mkdir(parents=True, exist_ok=True)
+    return output_dir / ("%s_%dx%d_%s.om" % (onnx_path.stem, image_size, image_size, soc_version))
+
+
+def convert_onnx_to_om(
+    onnx_path: Path,
+    om_path: Path,
+    image_size: int,
+    input_name: str,
+    soc_version: str,
+    atc_bin: str,
+    precision_mode: Optional[str],
+    force: bool,
+) -> Path:
+    if om_path.is_file() and not force:
+        print("[INFO] Reuse OM: %s" % om_path, flush=True)
+        return om_path
+    output_prefix = om_path.with_suffix("")
+    command = [
+        atc_bin,
+        "--model=%s" % onnx_path,
+        "--framework=5",
+        "--output=%s" % output_prefix,
+        "--input_format=NCHW",
+        "--input_shape=%s:1,3,%d,%d" % (input_name, image_size, image_size),
+        "--soc_version=%s" % soc_version,
+    ]
+    if precision_mode:
+        command.append("--precision_mode=%s" % precision_mode)
+    print("[INFO] Convert ONNX to OM:", flush=True)
+    print("[INFO] " + " ".join(command), flush=True)
+    subprocess.run(command, check=True)
+    if not om_path.is_file():
+        raise FileNotFoundError("ATC finished but OM was not found: %s" % om_path)
+    print("[INFO] Created OM: %s" % om_path, flush=True)
+    return om_path
+
+
+def resolve_model_for_npu(args: argparse.Namespace) -> Path:
+    suffix = args.model.suffix.lower()
+    if suffix == ".om":
+        return args.model
+    if suffix != ".onnx":
+        raise SystemExit("Model must be .om or .onnx: %s" % args.model)
+    if not args.model.is_file():
+        raise FileNotFoundError("ONNX model not found: %s" % args.model)
+    soc_version = resolve_soc_version(args.soc_version)
+    om_path = om_path_for_onnx(args.model, args.image_size, soc_version, args.om_cache_dir)
+    return convert_onnx_to_om(
+        onnx_path=args.model,
+        om_path=om_path,
+        image_size=args.image_size,
+        input_name=args.input_name,
+        soc_version=soc_version,
+        atc_bin=args.atc_bin,
+        precision_mode=args.precision_mode,
+        force=args.force_convert,
+    )
 
 
 @dataclass
@@ -63,6 +142,10 @@ class AclError(RuntimeError):
 class AscendOmModel:
     """Small ACL wrapper for one-input, one-output-or-more static OM models."""
 
+    _runtime_initialized = False
+    _runtime_device_id: Optional[int] = None
+    _active_models = 0
+
     def __init__(self, model_path: Path, device_id: int) -> None:
         try:
             import acl  # type: ignore
@@ -83,9 +166,9 @@ class AscendOmModel:
         self.input_data_buffer = None
         self.output_buffers: List[Tuple[int, int, object]] = []
         self.initialized = False
+        self.runtime_acquired = False
 
-        self._check(self.acl.init(), "acl.init")
-        self._check(self.acl.rt.set_device(device_id), "acl.rt.set_device")
+        self._acquire_runtime(device_id)
         self.context = self._value(
             self.acl.rt.create_context(device_id), "acl.rt.create_context"
         )
@@ -145,6 +228,38 @@ class AscendOmModel:
             )
             self.output_buffers.append((output_ptr, output_size, output_data_buffer))
         self.initialized = True
+
+    def _acquire_runtime(self, device_id: int) -> None:
+        cls = type(self)
+        if cls._runtime_initialized:
+            if cls._runtime_device_id != device_id:
+                raise RuntimeError(
+                    "ACL runtime is already initialized on device %s, cannot use device %s"
+                    % (cls._runtime_device_id, device_id)
+                )
+            cls._active_models += 1
+            self.runtime_acquired = True
+            return
+
+        self._check(self.acl.init(), "acl.init")
+        self._check(self.acl.rt.set_device(device_id), "acl.rt.set_device")
+        cls._runtime_initialized = True
+        cls._runtime_device_id = device_id
+        cls._active_models = 1
+        self.runtime_acquired = True
+
+    def _release_runtime(self) -> None:
+        cls = type(self)
+        if not self.runtime_acquired:
+            return
+        cls._active_models = max(0, cls._active_models - 1)
+        self.runtime_acquired = False
+        if cls._active_models == 0:
+            if cls._runtime_device_id is not None:
+                self._check(self.acl.rt.reset_device(cls._runtime_device_id), "acl.rt.reset_device")
+            self._check(self.acl.finalize(), "acl.finalize")
+            cls._runtime_initialized = False
+            cls._runtime_device_id = None
 
     def infer(self, tensor: np.ndarray, output_dtype: np.dtype) -> List[np.ndarray]:
         tensor = np.ascontiguousarray(tensor)
@@ -214,8 +329,7 @@ class AscendOmModel:
             self._check(self.acl.mdl.unload(self.model_id), "acl.mdl.unload")
         if self.context is not None:
             self._check(self.acl.rt.destroy_context(self.context), "acl.rt.destroy_context")
-        self._check(self.acl.rt.reset_device(self.device_id), "acl.rt.reset_device")
-        self._check(self.acl.finalize(), "acl.finalize")
+        self._release_runtime()
         self.initialized = False
 
     def __enter__(self) -> "AscendOmModel":
@@ -461,7 +575,7 @@ def run_image(
 
 def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run YOLOv8 OM inference on Ascend 310B.")
-    parser.add_argument("--model", type=Path, required=True, help="Path to the converted .om model.")
+    parser.add_argument("--model", type=Path, required=True, help="Path to a .om model or a .onnx model to auto-convert.")
     parser.add_argument("--image", type=Path, required=True, help="Image file or directory.")
     parser.add_argument("--metadata", type=Path, default=Path("package_metadata.json"))
     parser.add_argument("--classes", type=Path, help="Fallback classes.txt when metadata is unavailable.")
@@ -469,6 +583,12 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument("--save-image", type=Path, help="Optional annotated image file or directory.")
     parser.add_argument("--device-id", type=int, default=0)
     parser.add_argument("--image-size", type=int, default=960)
+    parser.add_argument("--input-name", default="images")
+    parser.add_argument("--soc-version", help="ATC soc_version, for example Ascend310B4. Defaults to SOC_VERSION env.")
+    parser.add_argument("--atc-bin", default="atc")
+    parser.add_argument("--precision-mode", default=None, help="Optional ATC precision_mode, for example allow_fp32_to_fp16.")
+    parser.add_argument("--om-cache-dir", type=Path, help="Directory for auto-converted OM files. Defaults to ONNX directory.")
+    parser.add_argument("--force-convert", action="store_true", help="Re-run ATC even when the cached OM already exists.")
     parser.add_argument("--confidence", type=float, default=0.25)
     parser.add_argument("--iou", type=float, default=0.70)
     parser.add_argument("--output-dtype", default="float32", choices=["float16", "float32"])
@@ -484,10 +604,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         args.image_size = int(metadata["image_size"])
     if "output_layout" in metadata:
         args.output_layout = str(metadata["output_layout"])
+    model_path = resolve_model_for_npu(args)
 
     image_paths = iter_images(args.image)
     args.multi_image = len(image_paths) > 1
-    with AscendOmModel(args.model, args.device_id) as model:
+    with AscendOmModel(model_path, args.device_id) as model:
         results = [
             run_image(model, image_path, metadata, class_names, args)
             for image_path in image_paths
