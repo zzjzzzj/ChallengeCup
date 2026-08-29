@@ -1,0 +1,5 @@
+# Install torch/torchvision separately for the board CPU/aarch64 environment.
+numpy>=1.21,<2
+Pillow>=9,<12
+PyYAML>=6,<7
+ultralytics>=8.4,<8.5

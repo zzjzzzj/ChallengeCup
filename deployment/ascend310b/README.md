@@ -33,6 +33,78 @@ python train.py ascend310b-package \
 
 Copy the output folder or zip archive to the Ascend device.
 
+## Optional: augment before board-side training
+
+This step is for a full project checkout on the microcomputer, not for the
+runtime-only inference package. It uses the project dataset root instead of
+hard-coded Windows paths.
+
+Install the lightweight augmentation dependencies first. Install
+torch/torchvision separately for your aarch64 environment before starting YOLO
+training.
+
+```bash
+python3 -m pip install -r deployment/ascend310b/requirements-training.txt
+```
+
+Generate an augmented YOLO training dataset:
+
+```bash
+python3 train.py ascend310b-augment \
+  --dataset-root data/datasets_r1_base_train \
+  --output outputs/datasets_r1_base_train_augmented \
+  --include-original \
+  --classes data/datasets_r1_base_train/classes.txt
+```
+
+`--dataset-root` supports both standard YOLO folders
+`images[/train] + labels[/train]` and this project's flat board-side folder
+where images, same-name `.txt` labels, and `classes.txt` live together.
+
+The output contains `images/`, `labels/`, `classes.txt`,
+`augmentation_manifest.csv`, `augmentation_summary.json`, and `data.yaml`.
+If no independent validation set is provided, the generated `data.yaml` points
+`val` to the augmented training images so the training command can run. That is
+useful for smoke testing, but it is not an independent accuracy metric.
+
+If you have a separate validation dataset, pass it while generating the YAML:
+
+```bash
+python3 train.py ascend310b-augment \
+  --dataset-root data/datasets_r1_base_train \
+  --val-root data/datasets_r1_base_val \
+  --output outputs/datasets_r1_base_train_augmented \
+  --include-original \
+  --classes data/datasets_r1_base_train/classes.txt
+```
+
+Then train with the generated YAML:
+
+```bash
+python3 train.py yolo \
+  --data outputs/datasets_r1_base_train_augmented/data.yaml \
+  --image-size 960 \
+  --batch-size 4 \
+  --workers 2 \
+  --device cpu \
+  --name ascend310b_augmented_yolov8n_960
+```
+
+Or run augmentation plus training in one command. If the augmented `data.yaml`
+already exists, it is reused unless `--force-augment` is passed.
+
+```bash
+bash deployment/ascend310b/run_train_with_aug.sh \
+  --dataset-root data/datasets_r1_base_train \
+  --output outputs/datasets_r1_base_train_augmented \
+  --classes data/datasets_r1_base_train/classes.txt \
+  --image-size 960 \
+  --batch-size 4 \
+  --workers 2 \
+  --device cpu \
+  --name ascend310b_augmented_yolov8n_960
+```
+
 ## Run ONNX on CPU first
 
 Since ONNX CPU is often the easiest board-side smoke test, run this before OM:
