@@ -9,15 +9,33 @@ logic from `ROUTING_LOGIC_DETAILED.md` without modifying the older
 Put the three exported ONNX or OM files here:
 
 ```text
-deployment/ascend310bplus/
-  models/
-    01_scene_router_224.onnx
-    02_easy_detector_6class_640.onnx
-    03_hard_detector_3class_960.onnx
+models/
+  01_scene_router_224.onnx
+  02_easy_detector_6class_640.onnx
+  03_hard_detector_3class_960.onnx
 ```
 
-The default paths are configured in `config.json`. You can edit that file or
-override model paths on the command line.
+The same filenames are also accepted under `deployment/ascend310bplus/models/`.
+The default paths are configured as `models/...` in `config.json`; the runtime
+first checks paths relative to this folder and then the project root. You can
+also override model paths on the command line.
+
+Check paths before converting:
+
+```bash
+bash deployment/ascend310bplus/check_models.sh \
+  --soc-version Ascend310B4
+```
+
+If your filenames are different:
+
+```bash
+bash deployment/ascend310bplus/check_models.sh \
+  --scene-model models/your_scene_router.onnx \
+  --easy-model models/your_easy_detector.onnx \
+  --hard-model models/your_hard_detector.onnx \
+  --soc-version Ascend310B4
+```
 
 ## Runtime Dependencies
 
@@ -41,6 +59,16 @@ The inference script converts ONNX models automatically. To convert first:
 
 ```bash
 bash deployment/ascend310bplus/convert_models.sh \
+  --soc-version Ascend310B4
+```
+
+Or with explicit paths:
+
+```bash
+bash deployment/ascend310bplus/convert_models.sh \
+  --scene-model models/01_scene_router_224.onnx \
+  --easy-model models/02_easy_detector_6class_640.onnx \
+  --hard-model models/03_hard_detector_3class_960.onnx \
   --soc-version Ascend310B4
 ```
 

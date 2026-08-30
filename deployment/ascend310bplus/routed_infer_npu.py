@@ -32,6 +32,7 @@ ACL_MEMCPY_HOST_TO_DEVICE = 1
 ACL_MEMCPY_DEVICE_TO_HOST = 2
 IMAGE_EXTENSIONS = {".bmp", ".jpeg", ".jpg", ".png", ".tif", ".tiff"}
 SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPT_DIR.parents[1]
 DEFAULT_CONFIG = SCRIPT_DIR / "config.json"
 
 
@@ -300,16 +301,41 @@ def require_mapping(value: Any, label: str) -> Dict[str, Any]:
     return value
 
 
-def resolve_relative_path(path_value: str, base_dir: Path) -> Path:
+def candidate_model_paths(path_value: str, base_dir: Path) -> List[Path]:
     path = Path(path_value)
     if path.is_absolute():
-        return path
-    return (base_dir / path).resolve()
+        return [path.resolve()]
+    candidates = [
+        (base_dir / path).resolve(),
+        (PROJECT_ROOT / path).resolve(),
+        (Path.cwd() / path).resolve(),
+    ]
+    unique: List[Path] = []
+    seen = set()
+    for candidate in candidates:
+        key = str(candidate).casefold()
+        if key not in seen:
+            unique.append(candidate)
+            seen.add(key)
+    return unique
+
+
+def resolve_relative_path(path_value: str, base_dir: Path) -> Path:
+    candidates = candidate_model_paths(path_value, base_dir)
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
 
 
 def config_path_value(config: Dict[str, Any], branch: str, base_dir: Path) -> Path:
     section = require_mapping(config.get(branch), branch)
     return resolve_relative_path(str(section["model"]), base_dir)
+
+
+def configured_model_candidates(config: Dict[str, Any], branch: str, base_dir: Path) -> List[Path]:
+    section = require_mapping(config.get(branch), branch)
+    return candidate_model_paths(str(section["model"]), base_dir)
 
 
 def get_input_size(section: Dict[str, Any], label: str) -> Tuple[int, int]:
@@ -441,6 +467,66 @@ def resolve_model_for_npu(
         precision_mode,
         force,
     )
+
+
+def inspect_configured_model(
+    config: Dict[str, Any],
+    config_dir: Path,
+    section_name: str,
+    args: argparse.Namespace,
+) -> Dict[str, Any]:
+    section = require_mapping(config[section_name], section_name)
+    width, height = get_input_size(section, section_name)
+    configured_value = str(section["model"])
+    candidates = configured_model_candidates(config, section_name, config_dir)
+    existing = next((path for path in candidates if path.is_file()), None)
+    payload: Dict[str, Any] = {
+        "section": section_name,
+        "configured": configured_value,
+        "input_size": [width, height],
+        "input_name": str(section.get("input_name", "images")),
+        "exists": existing is not None,
+        "resolved": str(existing if existing is not None else candidates[0]),
+        "searched": [str(path) for path in candidates],
+    }
+    if existing is not None and existing.suffix.lower() == ".onnx":
+        soc_version = args.soc_version or os.environ.get("SOC_VERSION")
+        if soc_version:
+            payload["cached_om"] = str(om_path_for_onnx(existing, width, height, soc_version, args.om_cache_dir))
+        else:
+            payload["cached_om"] = "requires --soc-version or SOC_VERSION"
+    return payload
+
+
+def inspect_models(
+    config: Dict[str, Any],
+    config_dir: Path,
+    args: argparse.Namespace,
+) -> List[Dict[str, Any]]:
+    return [
+        inspect_configured_model(config, config_dir, "scene_router", args),
+        inspect_configured_model(config, config_dir, "easy_branch", args),
+        inspect_configured_model(config, config_dir, "hard_branch", args),
+    ]
+
+
+def raise_missing_models(inspections: Sequence[Dict[str, Any]]) -> None:
+    missing = [item for item in inspections if not item["exists"]]
+    if not missing:
+        return
+    lines = ["Required model file(s) were not found:"]
+    for item in missing:
+        lines.append("- %s configured as %s" % (item["section"], item["configured"]))
+        for candidate in item["searched"]:
+            lines.append("  searched: %s" % candidate)
+    lines.extend(
+        [
+            "",
+            "Put the three files under project-root models/ or deployment/ascend310bplus/models/,",
+            "or pass --scene-model, --easy-model and --hard-model with the actual paths.",
+        ]
+    )
+    raise FileNotFoundError("\n".join(lines))
 
 
 def prepare_scene_tensor(image: Image.Image, width: int, height: int, mode: str) -> np.ndarray:
@@ -1001,6 +1087,7 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument("--om-cache-dir", type=Path)
     parser.add_argument("--force-convert", action="store_true")
     parser.add_argument("--convert-only", action="store_true", help="Only convert ONNX models to OM and exit.")
+    parser.add_argument("--check-models", action="store_true", help="Only report configured model paths and exit.")
     parser.add_argument("--no-save-images", action="store_true")
     parser.add_argument("--min-box-size", type=float, default=1.0)
     parser.add_argument("--route-confidence", type=float)
@@ -1022,6 +1109,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     config = load_json(config_path)
     apply_cli_overrides(config, args)
     config_dir = config_path.parent
+
+    inspections = inspect_models(config, config_dir, args)
+    if args.check_models:
+        print(json.dumps({"models": inspections}, ensure_ascii=False, indent=2))
+        return 0
+    raise_missing_models(inspections)
 
     if args.convert_only:
         model_paths = resolve_all_models(config, config_dir, args)
@@ -1161,6 +1254,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
+    except (FileNotFoundError, ValueError) as exc:
+        print("routed_infer_npu.py: %s" % exc, file=sys.stderr)
+        raise SystemExit(1)
     except Exception as exc:
         print("routed_infer_npu.py: %s" % exc, file=sys.stderr)
         raise

@@ -1,6 +1,6 @@
 # Models
 
-Place the three routed inference models in this directory:
+You may place the three routed inference models in this directory:
 
 ```text
 01_scene_router_224.onnx
@@ -11,3 +11,12 @@ Place the three routed inference models in this directory:
 The runtime can also use preconverted `.om` files. Update `../config.json` or
 pass `--scene-model`, `--easy-model`, and `--hard-model` if your filenames are
 different.
+
+The default `../config.json` also accepts the same names under the project-root
+`models/` directory, which is often more convenient on the board:
+
+```text
+ChallengeCup/models/01_scene_router_224.onnx
+ChallengeCup/models/02_easy_detector_6class_640.onnx
+ChallengeCup/models/03_hard_detector_3class_960.onnx
+```
