@@ -18,7 +18,7 @@ from .reasoning import (
     summarize_detection_confidence,
 )
 from .scene import SceneRecognizer, build_environment_state
-from .schemas import AgentReport, PipelineStage, ProbabilityResult
+from .schemas import AgentReport, PipelineStage
 from .target import TargetClassifier
 
 
@@ -227,6 +227,7 @@ class IntelligentRecognitionAgent:
             memory=memory_summary,
             warnings=sorted(set(warnings)),
             stages=stages,
+            sparse_moe=dict(getattr(self.detector, "last_sparse_moe", {})),
         )
 
         # 10. 持续学习记忆。

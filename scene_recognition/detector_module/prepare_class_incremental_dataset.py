@@ -16,7 +16,7 @@ import os
 import random
 import shutil
 from collections import Counter, defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
 
@@ -24,6 +24,16 @@ import yaml
 
 from scene_recognition.detector_module import ALL_CLASS_NAMES
 from scene_recognition.detector_module.boxes import YoloBox, parse_yolo_boxes, resolve_label_path
+from scene_recognition.detector_module.context_metadata import (
+    CONTEXT_INDEX_FIELDS,
+    SCENE_NAMES,
+    SENSOR_NAMES,
+    build_context_row,
+    context_index_summary,
+    resolve_context_metadata,
+    read_context_rows,
+    write_context_index,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -47,6 +57,7 @@ class SourceSample:
     boxes: tuple[YoloBox, ...]
     source_key: str
     operation: str
+    context: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -141,23 +152,41 @@ def resolve_split_images(
     return unique
 
 
-def read_provenance(manifest_path: Path | None) -> dict[str, tuple[str, str]]:
-    """Map output filenames to (source frame, augmentation operation)."""
+def read_provenance_details(manifest_path: Path | None) -> dict[str, dict[str, str]]:
+    """Map output filenames to provenance and optional authoritative context."""
 
     if manifest_path is None or not manifest_path.is_file():
         return {}
     with manifest_path.open("r", encoding="utf-8-sig", newline="") as handle:
         rows = list(csv.DictReader(handle))
-    mapping: dict[str, tuple[str, str]] = {}
+    mapping: dict[str, dict[str, str]] = {}
     for row in rows:
         output_name = Path(row.get("output_image") or "").name
         if not output_name:
             continue
-        mapping[output_name.casefold()] = (
-            str(row.get("source_image") or output_name),
-            str(row.get("operation") or "unknown"),
-        )
+        sensor_value = str(row.get("sensor") or "").strip().casefold()
+        scene_value = str(row.get("scene") or "").strip().casefold()
+        mapping[output_name.casefold()] = {
+            "source_image": str(row.get("source_image") or output_name),
+            "operation": str(row.get("operation") or row.get("operation_detail") or "unknown"),
+            "sensor": sensor_value,
+            "scene": scene_value,
+            "metadata_source": (
+                "authoritative_manifest"
+                if sensor_value in SENSOR_NAMES or scene_value in SCENE_NAMES
+                else ""
+            ),
+        }
     return mapping
+
+
+def read_provenance(manifest_path: Path | None) -> dict[str, tuple[str, str]]:
+    """Backward-compatible map to ``(source frame, augmentation operation)``."""
+
+    return {
+        key: (value["source_image"], value["operation"])
+        for key, value in read_provenance_details(manifest_path).items()
+    }
 
 
 def _fallback_source_key(image_path: Path) -> str:
@@ -169,22 +198,50 @@ def scan_samples(
     images: Iterable[Path],
     split: str,
     class_count: int,
-    provenance: dict[str, tuple[str, str]],
+    provenance: dict[str, tuple[str, str] | dict[str, str]],
 ) -> list[SourceSample]:
     samples: list[SourceSample] = []
     for image_path in images:
         boxes = tuple(parse_yolo_boxes(resolve_label_path(image_path), class_count))
-        source_key, operation = provenance.get(
-            image_path.name.casefold(),
-            (_fallback_source_key(image_path), "unknown"),
-        )
+        provenance_value = provenance.get(image_path.name.casefold())
+        if isinstance(provenance_value, dict):
+            source_image = provenance_value.get("source_image") or image_path.name
+            operation = provenance_value.get("operation") or "unknown"
+            context = resolve_context_metadata(
+                source_image,
+                sensor=provenance_value.get("sensor"),
+                scene=provenance_value.get("scene"),
+                metadata_source=provenance_value.get("metadata_source") or None,
+            )
+        elif isinstance(provenance_value, tuple):
+            source_image, operation = provenance_value
+            context = resolve_context_metadata(source_image)
+        else:
+            source_image, operation = _fallback_source_key(image_path), "unknown"
+            context = resolve_context_metadata(source_image)
+        # Some manifests identify the source frame without carrying the
+        # sensor/scene token, while the materialized filename does. Fill only
+        # still-unknown fields from that compatibility fallback; authoritative
+        # values remain untouched.
+        filename_context = resolve_context_metadata(image_path.name)
+        for context_field in ("sensor", "scene"):
+            if (
+                context[context_field] == "unknown"
+                and filename_context[context_field] != "unknown"
+            ):
+                context[context_field] = filename_context[context_field]
+        if context["metadata_source"] == "unknown" and any(
+            context[field] != "unknown" for field in ("sensor", "scene")
+        ):
+            context["metadata_source"] = "filename_fallback"
         samples.append(
             SourceSample(
                 image_path=image_path.resolve(),
                 split=split,
                 boxes=boxes,
-                source_key=source_key.casefold(),
+                source_key=str(source_image).casefold(),
                 operation=operation,
+                context={"source_image": str(source_image), **context},
             )
         )
     return samples
@@ -291,6 +348,8 @@ def materialize_training_view(
     current_class_id: int,
     replay_entries: list[ReplayEntry],
     output_dir: Path,
+    *,
+    stage: int = 0,
 ) -> dict:
     """Write current-task and replay examples into one standard YOLO view."""
 
@@ -308,6 +367,7 @@ def materialize_training_view(
     replay_manifest: list[str] = []
     link_modes: Counter[str] = Counter()
     object_counts: Counter[int] = Counter()
+    context_rows: list[dict[str, str]] = []
 
     def add_sample(sample: SourceSample, role: str, label_class_id: int) -> Path:
         target_image = images_dir / _materialized_name(sample.image_path, role, label_class_id)
@@ -318,6 +378,20 @@ def materialize_training_view(
         _write_label(labels_dir / f"{target_image.stem}.txt", selected_boxes)
         object_counts[label_class_id] += len(selected_boxes)
         manifest.append(target_image.resolve().as_posix())
+        context = sample.context
+        context_rows.append(
+            build_context_row(
+                materialized_image_path=target_image,
+                source_image=context.get("source_image", sample.source_key),
+                sensor=context.get("sensor"),
+                scene=context.get("scene"),
+                split="train",
+                stage=stage,
+                sample_role=role,
+                augmentation_operation=sample.operation,
+                metadata_source=context.get("metadata_source"),
+            )
+        )
         return target_image
 
     for sample in current_samples:
@@ -336,6 +410,7 @@ def materialize_training_view(
         "\n".join(replay_manifest) + ("\n" if replay_manifest else ""),
         encoding="utf-8",
     )
+    context_index_path = write_context_index(context_rows, output_dir / "context_index.csv")
     return {
         "current_images": len(current_samples),
         "replay_images": len(replay_entries),
@@ -343,6 +418,8 @@ def materialize_training_view(
         "objects_by_class_id": {str(key): value for key, value in sorted(object_counts.items())},
         "manifest": str(manifest_path.resolve()),
         "replay_manifest": str(replay_manifest_path.resolve()),
+        "context_index": str(context_index_path),
+        "context_summary": context_index_summary(context_rows),
         "materialization": dict(link_modes),
     }
 
@@ -353,6 +430,7 @@ def materialize_validation_view(
     output_dir: Path,
     *,
     split: str = "val",
+    stage: int = 0,
 ) -> dict:
     images_dir = output_dir / "images"
     labels_dir = output_dir / "labels"
@@ -361,6 +439,7 @@ def materialize_validation_view(
     manifest: list[str] = []
     link_modes: Counter[str] = Counter()
     object_counts: Counter[int] = Counter()
+    context_rows: list[dict[str, str]] = []
     for sample in val_samples:
         boxes = [box for box in sample.boxes if box.class_id in learned_class_ids]
         if not boxes:
@@ -370,12 +449,29 @@ def materialize_validation_view(
         _write_label(labels_dir / f"{target_image.stem}.txt", boxes)
         manifest.append(target_image.resolve().as_posix())
         object_counts.update(box.class_id for box in boxes)
+        context = sample.context
+        context_rows.append(
+            build_context_row(
+                materialized_image_path=target_image,
+                source_image=context.get("source_image", sample.source_key),
+                sensor=context.get("sensor"),
+                scene=context.get("scene"),
+                split=split,
+                stage=stage,
+                sample_role=split,
+                augmentation_operation=sample.operation,
+                metadata_source=context.get("metadata_source"),
+            )
+        )
     manifest_path = output_dir / f"{split}.txt"
     manifest_path.write_text("\n".join(manifest) + ("\n" if manifest else ""), encoding="utf-8")
+    context_index_path = write_context_index(context_rows, output_dir / "context_index.csv")
     return {
         "images": len(manifest),
         "objects_by_class_id": {str(key): value for key, value in sorted(object_counts.items())},
         "manifest": str(manifest_path.resolve()),
+        "context_index": str(context_index_path),
+        "context_summary": context_index_summary(context_rows),
         "materialization": dict(link_modes),
     }
 
@@ -386,6 +482,7 @@ def _write_stage_yaml(
     val_manifest: str,
     learned_names: list[str],
     test_manifest: str | None = None,
+    context_index: str | None = None,
 ) -> str:
     payload = {
         "train": train_manifest,
@@ -395,6 +492,8 @@ def _write_stage_yaml(
     }
     if test_manifest:
         payload["test"] = test_manifest
+    if context_index:
+        payload["context_index"] = context_index
     path.write_text(yaml.safe_dump(payload, allow_unicode=True, sort_keys=False), encoding="utf-8")
     return str(path.resolve())
 
@@ -454,7 +553,7 @@ def prepare_class_incremental_dataset(
     if provenance_manifest is None:
         candidate = data_yaml.parent / "dataset_manifest.csv"
         provenance_manifest = candidate if candidate.is_file() else None
-    provenance = read_provenance(provenance_manifest)
+    provenance = read_provenance_details(provenance_manifest)
     train_samples = scan_samples(train_images, "train", len(dataset_names), provenance)
     val_samples = scan_samples(val_images, "val", len(dataset_names), provenance)
     test_samples = scan_samples(test_images, "test", len(dataset_names), provenance)
@@ -470,6 +569,7 @@ def prepare_class_incremental_dataset(
             val_samples,
             set(range(stage_number)),
             stage_dir / "val_all",
+            stage=stage_number,
         )
         total_materialization.update(val_stats["materialization"])
         test_stats = (
@@ -478,6 +578,7 @@ def prepare_class_incremental_dataset(
                 set(range(stage_number)),
                 stage_dir / "test_all",
                 split="test",
+                stage=stage_number,
             )
             if test_samples
             else None
@@ -504,6 +605,7 @@ def prepare_class_incremental_dataset(
                 class_id,
                 replay_before,
                 view_dir,
+                stage=stage_number,
             )
             total_materialization.update(train_stats["materialization"])
             yaml_path = _write_stage_yaml(
@@ -512,6 +614,7 @@ def prepare_class_incremental_dataset(
                 val_stats["manifest"],
                 learned_names,
                 test_stats["manifest"] if test_stats is not None else None,
+                train_stats["context_index"],
             )
             replay_before_path = stage_dir / f"buffer_before_{buffer_size}.json"
             replay_before_payload = _buffer_payload(replay_before, ordered_names)
@@ -539,7 +642,17 @@ def prepare_class_incremental_dataset(
                 },
                 "training": train_stats,
                 "data_yaml": yaml_path,
+                "context_index": train_stats["context_index"],
             }
+        stage_context_rows: list[dict[str, str]] = []
+        stage_context_rows.extend(read_context_rows(Path(val_stats["context_index"])))
+        if test_stats is not None:
+            stage_context_rows.extend(read_context_rows(Path(test_stats["context_index"])))
+        for buffer_payload in buffers.values():
+            stage_context_rows.extend(
+                read_context_rows(Path(buffer_payload["context_index"]))
+            )
+        stage_context_path = write_context_index(stage_context_rows, stage_dir / "context_index.csv")
         stages.append(
             {
                 "stage": stage_number,
@@ -549,6 +662,8 @@ def prepare_class_incremental_dataset(
                 "all_learned_classes": learned_names,
                 "validation": val_stats,
                 "test": test_stats,
+                "context_index": str(stage_context_path),
+                "context_summary": context_index_summary(stage_context_rows),
                 "buffers": buffers,
             }
         )
@@ -563,6 +678,7 @@ def prepare_class_incremental_dataset(
         "seed": seed,
         "source_data_yaml": str(data_yaml.resolve()),
         "provenance_manifest": str(provenance_manifest.resolve()) if provenance_manifest else None,
+        "context_index_fields": list(CONTEXT_INDEX_FIELDS),
         "source_statistics": {
             "train_images": len(train_samples),
             "val_images": len(val_samples),

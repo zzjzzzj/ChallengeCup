@@ -38,8 +38,10 @@ class TargetDetector:
         self.allow_label_fallback = allow_label_fallback
         self._model: Any | None = None
         self.warnings: list[str] = []
+        self.last_sparse_moe: dict[str, Any] = {}
 
     def detect(self, image_path: Path) -> list[DetectionBox]:
+        self.last_sparse_moe = {}
         if self.model_path and self.model_path.is_file():
             try:
                 boxes = self._detect_with_yolo(image_path)
@@ -73,8 +75,10 @@ class TargetDetector:
             verbose=False,
         )
         if not results:
+            self.last_sparse_moe = {}
             return []
         result = results[0]
+        self.last_sparse_moe = self._read_sparse_moe_diagnostics()
         names = getattr(result, "names", None) or getattr(model, "names", None) or self.class_names
         boxes = []
         for index, box in enumerate(result.boxes):
@@ -100,9 +104,31 @@ class TargetDetector:
                     confidence=round(confidence, 6),
                     source="yolo_model",
                     track_id=f"det-{index}",
+                    metadata=(
+                        {
+                            "sparse_moe": self.last_sparse_moe,
+                            "expert_ids": self.last_sparse_moe.get("expert_ids", []),
+                            "expert_weights": self.last_sparse_moe.get("expert_weights", []),
+                            "router_entropy": self.last_sparse_moe.get("router_entropy"),
+                        }
+                        if self.last_sparse_moe
+                        else {}
+                    ),
                 )
             )
         return boxes
+
+    def _read_sparse_moe_diagnostics(self) -> dict[str, Any]:
+        """Read optional model-internal MoE diagnostics without changing detections."""
+
+        try:
+            from scene_recognition.detector_module.sparse_moe_model import get_sparse_moe_adapter
+
+            loaded = self._load_yolo()
+            adapter = get_sparse_moe_adapter(getattr(loaded, "model", loaded))
+            return adapter.diagnostics(0) if adapter is not None else {}
+        except (AttributeError, ImportError, TypeError, ValueError):
+            return {}
 
     def _detect_from_yolo_label(self, image_path: Path) -> list[DetectionBox]:
         label_path = resolve_label_path(image_path)
