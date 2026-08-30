@@ -73,6 +73,9 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument("--exist-ok", action="store_true")
     parser.add_argument("--no-pretrained", action="store_true")
     parser.add_argument("--no-builtin-aug", action="store_true")
+    parser.add_argument("--freeze", type=int, default=None, help="Freeze the first N YOLO layers for CPU fine-tuning.")
+    parser.add_argument("--no-amp", action="store_true", help="Disable AMP. Recommended on CPU-only training.")
+    parser.add_argument("--no-plots", action="store_true", help="Skip plot generation to reduce board-side overhead.")
     return parser.parse_args(argv)
 
 
@@ -142,6 +145,12 @@ def build_training_command(args: argparse.Namespace, data_yaml: Path) -> List[st
         command.append("--no-pretrained")
     if args.no_builtin_aug:
         command.append("--no-builtin-aug")
+    if args.freeze is not None:
+        command.extend(["--freeze", str(args.freeze)])
+    if args.no_amp:
+        command.append("--no-amp")
+    if args.no_plots:
+        command.append("--no-plots")
     return command
 
 

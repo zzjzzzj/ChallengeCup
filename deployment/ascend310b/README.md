@@ -105,6 +105,81 @@ bash deployment/ascend310b/run_train_with_aug.sh \
   --name ascend310b_augmented_yolov8n_960
 ```
 
+## Required microcomputer-side incremental training
+
+Ascend 310B boards are the supported path for OM/ACL inference.  If the project
+requires incremental training to happen on the microcomputer, use CPU PyTorch
+for weight updates and keep the NPU for conversion/inference checks.
+
+First check which Python is actually running and whether training dependencies
+are visible:
+
+```bash
+bash deployment/ascend310b/run_probe_training_env.sh
+```
+
+If `torch` or `ultralytics` is missing, install them into the same environment
+that will launch training.  Install torch/torchvision from a CPU/aarch64 wheel
+source appropriate for your board, then install the project training extras:
+
+```bash
+python -m pip install -U pip setuptools wheel
+python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+python -m pip install -r deployment/ascend310b/requirements-training.txt
+```
+
+For board-side incremental fine-tuning, start with a smoke test, not a full
+960-pixel run:
+
+```bash
+python train.py continual-yolo \
+  --data scene_recognition/detector_module/artifacts/continual_r2/data_replay.yaml \
+  --base-model models/base_4class.pt \
+  --strategy replay \
+  --output scene_recognition/detector_module/runs/micro_continual_smoke \
+  --epochs 2 \
+  --patience 999 \
+  --image-size 512 \
+  --batch-size 1 \
+  --workers 0 \
+  --device cpu \
+  --freeze 10 \
+  --no-amp \
+  --no-plots \
+  --no-builtin-aug
+```
+
+After the smoke test succeeds, increase only one budget at a time: first
+`--epochs`, then `--image-size`, then remove or reduce `--freeze`. A practical
+board-side run is usually `--image-size 640 --batch-size 1 --workers 0`.
+
+For the six-stage Class-IL runner, use ER first because DER runs an extra
+teacher model during training:
+
+```bash
+python train.py class-il-yolo \
+  --prepared scene_recognition/detector_module/artifacts/class_incremental \
+  --initial-model models/yolov8n.pt \
+  --method er \
+  --buffer-size 200 \
+  --output scene_recognition/detector_module/runs/micro_class_il_er \
+  --epochs 2 \
+  --patience 999 \
+  --image-size 512 \
+  --batch-size 1 \
+  --workers 0 \
+  --device cpu \
+  --freeze 10 \
+  --no-amp \
+  --no-plots \
+  --no-builtin-aug \
+  --stop-after-stage 1
+```
+
+`--device npu:0` is accepted for experiments only when `torch_npu` is installed,
+but it is not the recommended delivery path on Ascend 310B. Treat CPU training
+plus NPU OM inference as the reliable microcomputer pipeline.
+
 ## Run ONNX on CPU first
 
 Since ONNX CPU is often the easiest board-side smoke test, run this before OM:

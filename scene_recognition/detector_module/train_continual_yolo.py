@@ -16,11 +16,17 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-import torch
 import yaml
 
 from scene_recognition.detector_module import BASE_CLASS_NAMES
 from scene_recognition.detector_module.metrics import detection_metrics_to_dict
+from scene_recognition.detector_module.train_detector import (
+    BUILTIN_AUGMENTATION,
+    DISABLED_AUGMENTATION,
+    default_device,
+    import_training_dependencies,
+    maybe_import_torch_npu,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -83,9 +89,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--image-size", type=int, default=640)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--workers", type=int, default=0)
-    parser.add_argument("--device", default="0" if torch.cuda.is_available() else "cpu")
+    parser.add_argument("--device", default=default_device())
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--learning-rate", type=float, default=1e-3)
+    parser.add_argument("--freeze", type=int, default=None, help="Freeze the first N YOLO layers; useful for CPU fine-tuning.")
+    parser.add_argument("--no-amp", action="store_true", help="Disable AMP. Recommended on CPU-only training.")
+    parser.add_argument("--no-plots", action="store_true", help="Skip plot generation to reduce board-side overhead.")
+    parser.add_argument("--no-builtin-aug", action="store_true", help="Disable Ultralytics online augmentation for faster CPU fine-tuning.")
     return parser.parse_args()
 
 
@@ -94,6 +104,8 @@ def main() -> None:
     # must fail locally rather than causing a network request.
     os.environ.setdefault("YOLO_OFFLINE", "true")
     args = parse_args()
+    torch, ultralytics, YOLO = import_training_dependencies()
+    maybe_import_torch_npu(args.device)
     if not args.data.is_file():
         raise FileNotFoundError(args.data)
     if not args.base_model.is_file():
@@ -113,14 +125,6 @@ def main() -> None:
     if not data_config.get("val"):
         raise ValueError("持续微调必须提供独立 val 清单用于选择 checkpoint")
 
-    try:
-        import ultralytics
-        from ultralytics import YOLO
-    except ModuleNotFoundError as exc:
-        raise ModuleNotFoundError(
-            "缺少 ultralytics；请在本地环境安装 requirements.txt 后重试"
-        ) from exc
-
     model = YOLO(str(args.base_model.resolve()))
     base_model_names = normalize_model_names(getattr(model, "names", None))
     if base_model_names and base_model_names != BASE_CLASS_NAMES:
@@ -130,6 +134,7 @@ def main() -> None:
         )
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
+    augmentation = DISABLED_AUGMENTATION if args.no_builtin_aug else BUILTIN_AUGMENTATION
     started = time.perf_counter()
     result = model.train(
         data=str(args.data.resolve()),
@@ -146,23 +151,15 @@ def main() -> None:
         pretrained=True,
         resume=False,
         cache=False,
-        amp=True,
+        amp=not args.no_amp,
         project=str(args.output.parent.resolve()),
         name=args.output.name,
         exist_ok=False,
-        plots=True,
+        plots=not args.no_plots,
         verbose=True,
-        close_mosaic=10,
-        hsv_h=0.0,
-        hsv_s=0.0,
-        hsv_v=0.15,
-        degrees=5.0,
-        translate=0.08,
-        scale=0.20,
-        fliplr=0.5,
-        flipud=0.0,
-        mosaic=0.6,
-        mixup=0.0,
+        close_mosaic=0 if args.no_builtin_aug else 10,
+        freeze=args.freeze,
+        **augmentation,
     )
     run_dir = Path(result.save_dir)
     best_model = run_dir / "weights" / "best.pt"
@@ -178,7 +175,7 @@ def main() -> None:
         device=args.device,
         project=str(run_dir),
         name="continual_val",
-        plots=True,
+        plots=not args.no_plots,
         verbose=False,
     )
     summary = {
@@ -192,6 +189,13 @@ def main() -> None:
         "best_model": str(best_model.resolve()),
         "validation": detection_metrics_to_dict(validation, class_names),
         "elapsed_seconds": round(time.perf_counter() - started, 3),
+        "training_controls": {
+            "freeze": args.freeze,
+            "amp": not args.no_amp,
+            "plots": not args.no_plots,
+            "builtin_augmentation_disabled": args.no_builtin_aug,
+            "builtin_augmentation": augmentation,
+        },
         "environment": {
             "started_at": datetime.now().isoformat(timespec="seconds"),
             "python": sys.version,

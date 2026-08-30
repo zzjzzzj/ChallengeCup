@@ -19,13 +19,15 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-import torch
 import yaml
 
 from scene_recognition.detector_module.metrics import detection_metrics_to_dict
 from scene_recognition.detector_module.train_detector import (
     BUILTIN_AUGMENTATION,
     DISABLED_AUGMENTATION,
+    default_device,
+    import_training_dependencies,
+    maybe_import_torch_npu,
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -42,12 +44,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--image-size", type=int, default=640)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--workers", type=int, default=4)
-    parser.add_argument("--device", default="0" if torch.cuda.is_available() else "cpu")
+    parser.add_argument("--device", default=default_device())
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--project", type=Path, default=DEFAULT_RUNS)
     parser.add_argument("--name", required=True)
     parser.add_argument("--eval-split", default="val", choices=["val", "test"])
     parser.add_argument("--exist-ok", action="store_true")
+    parser.add_argument("--freeze", type=int, default=None, help="Freeze the first N YOLO layers; useful for CPU fine-tuning.")
+    parser.add_argument("--no-amp", action="store_true", help="Disable AMP. Recommended on CPU-only training.")
+    parser.add_argument("--no-plots", action="store_true", help="Skip plot generation to reduce board-side overhead.")
     parser.add_argument(
         "--no-builtin-aug",
         action="store_true",
@@ -76,12 +81,10 @@ def resolve_augmentation(no_builtin_aug: bool) -> dict[str, float]:
 
 def main() -> None:
     args = parse_args()
+    torch, ultralytics, YOLO = import_training_dependencies()
+    maybe_import_torch_npu(args.device)
     if not args.data.is_file():
         raise FileNotFoundError(f"数据配置不存在: {args.data}")
-
-    # Keep CLI help and config-only unit tests usable without the training extra.
-    import ultralytics
-    from ultralytics import YOLO
 
     pretrained = not args.no_pretrained
     # 从零训练必须同时满足：用 .yaml 建结构 + pretrained=False，二者缺一都会悄悄加载权重
@@ -117,12 +120,13 @@ def main() -> None:
         optimizer="auto",
         seed=args.seed,
         deterministic=True,
-        amp=True,
+        amp=not args.no_amp,
         cache=False,
-        plots=True,
+        plots=not args.no_plots,
         verbose=True,
         close_mosaic=0 if args.no_builtin_aug else 10,
         cos_lr=True,
+        freeze=args.freeze,
         **augmentation,
     )
 
@@ -141,7 +145,7 @@ def main() -> None:
         workers=args.workers,
         project=str(run_dir),
         name=f"eval_{args.eval_split}",
-        plots=True,
+        plots=not args.no_plots,
         verbose=True,
     )
 
@@ -156,8 +160,11 @@ def main() -> None:
             "image_size": args.image_size,
             "batch_size": args.batch_size,
             "device": args.device,
+            "freeze": args.freeze,
             "eval_split": args.eval_split,
             "builtin_augmentation_disabled": args.no_builtin_aug,
+            "amp": not args.no_amp,
+            "plots": not args.no_plots,
             "builtin_augmentation": augmentation,
         },
         "run_dir": str(run_dir.resolve()),

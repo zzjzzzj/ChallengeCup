@@ -40,6 +40,9 @@ COMMANDS: dict[str, tuple[str, ...]] = {
     "ascend310b-train-aug": (
         str(ROOT / "deployment" / "ascend310b" / "train_with_augmentation.py"),
     ),
+    "ascend310b-probe-train": (
+        str(ROOT / "deployment" / "ascend310b" / "probe_training_env.py"),
+    ),
     "ascend310b-cascade": (
         str(ROOT / "deployment" / "ascend310b" / "infer_cascade_npu.py"),
     ),
@@ -74,6 +77,7 @@ def usage() -> str:
         "  ascend310b-package  build a portable Ascend 310B inference package",
         "  ascend310b-augment  build selected offline YOLO augmentation data",
         "  ascend310b-train-aug augment first, then train YOLO on the generated data",
+        "  ascend310b-probe-train inspect board-side torch/ultralytics/NPU training environment",
         "  ascend310b-cascade  run six-class plus single-class expert NPU inference",
         "",
         "Run `python train.py <command> --help` for command-specific options.",

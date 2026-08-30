@@ -13,13 +13,18 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import torch
 import yaml
 
 from scene_recognition.detector_module import ALL_CLASS_NAMES
-from scene_recognition.detector_module.dark_experience_replay import DarkReplayModel
 from scene_recognition.detector_module.metrics import detection_metrics_to_dict
 from scene_recognition.detector_module.prepare_class_incremental_dataset import BUFFER_SIZE_CHOICES
+from scene_recognition.detector_module.train_detector import (
+    BUILTIN_AUGMENTATION,
+    DISABLED_AUGMENTATION,
+    default_device,
+    import_training_dependencies,
+    maybe_import_torch_npu,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -165,6 +170,7 @@ def validate_experiment(
 def _make_der_trainer(context: DERContext):
     """Create an Ultralytics trainer bound to one stage's DER context."""
 
+    from scene_recognition.detector_module.dark_experience_replay import DarkReplayModel
     from ultralytics.models.yolo.detect import DetectionTrainer
 
     class ReplayAwareDERTrainer(DetectionTrainer):
@@ -291,7 +297,8 @@ def build_class_incremental_metrics(
 
 
 def _training_arguments(args: argparse.Namespace, data_yaml: Path, stage_name: str, seed: int) -> dict:
-    return {
+    augmentation = DISABLED_AUGMENTATION if args.no_builtin_aug else BUILTIN_AUGMENTATION
+    kwargs = {
         "data": str(data_yaml.resolve()),
         "epochs": args.epochs,
         "patience": args.patience,
@@ -312,18 +319,11 @@ def _training_arguments(args: argparse.Namespace, data_yaml: Path, stage_name: s
         "exist_ok": False,
         "plots": not args.no_plots,
         "verbose": True,
-        "close_mosaic": 10,
-        "hsv_h": 0.0,
-        "hsv_s": 0.0,
-        "hsv_v": 0.15,
-        "degrees": 5.0,
-        "translate": 0.08,
-        "scale": 0.20,
-        "fliplr": 0.5,
-        "flipud": 0.0,
-        "mosaic": 0.6,
-        "mixup": 0.0,
+        "close_mosaic": 0 if args.no_builtin_aug else 10,
+        "freeze": args.freeze,
     }
+    kwargs.update(augmentation)
+    return kwargs
 
 
 def run_class_incremental(args: argparse.Namespace) -> dict:
@@ -350,11 +350,8 @@ def run_class_incremental(args: argparse.Namespace) -> dict:
         raise FileExistsError(f"输出目录非空，请使用新的实验目录: {args.output}")
     args.output.parent.mkdir(parents=True, exist_ok=True)
 
-    try:
-        import ultralytics
-        from ultralytics import YOLO
-    except ModuleNotFoundError as exc:
-        raise ModuleNotFoundError("训练需要本地安装 ultralytics>=8.4,<8.5") from exc
+    torch, ultralytics, YOLO = import_training_dependencies()
+    maybe_import_torch_npu(args.device)
 
     initial_probe = YOLO(str(args.initial_model.resolve()))
     initial_names = _normalize_model_names(getattr(initial_probe, "names", None))
@@ -454,6 +451,12 @@ def run_class_incremental(args: argparse.Namespace) -> dict:
                 if args.method == "der"
                 else {"enabled": False}
             ),
+            "training_controls": {
+                "freeze": args.freeze,
+                "amp": not args.no_amp,
+                "plots": not args.no_plots,
+                "builtin_augmentation_disabled": args.no_builtin_aug,
+            },
         }
         (run_dir / "class_incremental_stage_summary.json").write_text(
             json.dumps(stage_summary, ensure_ascii=False, indent=2),
@@ -549,15 +552,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--image-size", type=int, default=640)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--workers", type=int, default=0)
-    parser.add_argument("--device", default="0" if torch.cuda.is_available() else "cpu")
+    parser.add_argument("--device", default=default_device())
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--learning-rate", type=float, default=1e-3)
+    parser.add_argument("--freeze", type=int, default=None, help="Freeze the first N YOLO layers; useful for CPU fine-tuning.")
     parser.add_argument("--der-weight", type=float, default=1.0)
     parser.add_argument("--der-cls-weight", type=float, default=1.0)
     parser.add_argument("--der-box-weight", type=float, default=0.25)
     parser.add_argument("--der-min-confidence", type=float, default=0.0)
     parser.add_argument("--no-amp", action="store_true")
     parser.add_argument("--no-plots", action="store_true")
+    parser.add_argument("--no-builtin-aug", action="store_true", help="Disable Ultralytics online augmentation for faster CPU fine-tuning.")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument(
         "--stop-after-stage",
