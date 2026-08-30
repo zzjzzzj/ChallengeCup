@@ -16,8 +16,20 @@ from typing import Any
 import yaml
 
 from scene_recognition.detector_module import ALL_CLASS_NAMES
+from scene_recognition.detector_module.context_metadata import (
+    context_index_summary,
+    read_context_rows,
+    resolve_context_metadata,
+)
 from scene_recognition.detector_module.metrics import detection_metrics_to_dict
 from scene_recognition.detector_module.prepare_class_incremental_dataset import BUFFER_SIZE_CHOICES
+from scene_recognition.detector_module.sparse_moe_checkpoint import (
+    sparse_moe_metadata,
+    update_sparse_moe_anchors,
+    write_sparse_moe_artifacts,
+)
+from scene_recognition.detector_module.sparse_moe_model import SparseMoEConfig, get_sparse_moe_adapter
+from scene_recognition.detector_module.sparse_moe_trainer import make_sparse_moe_trainer
 from scene_recognition.detector_module.train_detector import (
     BUILTIN_AUGMENTATION,
     DISABLED_AUGMENTATION,
@@ -144,6 +156,10 @@ def validate_experiment(
             raise ValueError(f"第 {stage['stage']} 阶段缺少独立 test 清单")
         replay_manifest = Path(buffer["training"]["replay_manifest"])
         replay_paths = _read_nonempty_paths(replay_manifest)
+        context_index_value = buffer["training"].get("context_index")
+        context_index = Path(context_index_value) if context_index_value else None
+        if context_index is not None and not context_index.is_file():
+            raise FileNotFoundError(f"Class-IL context_index 不存在: {context_index}")
         expected_replay = int(buffer["training"]["replay_images"])
         if len(replay_paths) != expected_replay:
             raise ValueError(f"第 {stage['stage']} 阶段 replay 清单计数不一致")
@@ -153,17 +169,18 @@ def validate_experiment(
             raise ValueError(f"第 {stage['stage']} 阶段必须包含旧类回放")
         if len(replay_paths) > buffer_size:
             raise ValueError("replay 清单超过缓冲池容量")
-        plan.append(
-            {
-                "stage": stage["stage"],
-                "new_class": stage["new_classes"][0],
-                "learned_classes": expected_names,
-                "data_yaml": str(data_yaml.resolve()),
-                "replay_manifest": str(replay_manifest.resolve()),
-                "replay_images": len(replay_paths),
-                "evaluation_split": evaluation_split,
-            }
-        )
+        plan_entry = {
+            "stage": stage["stage"],
+            "new_class": stage["new_classes"][0],
+            "learned_classes": expected_names,
+            "data_yaml": str(data_yaml.resolve()),
+            "replay_manifest": str(replay_manifest.resolve()),
+            "replay_images": len(replay_paths),
+            "evaluation_split": evaluation_split,
+        }
+        if context_index is not None:
+            plan_entry["context_index"] = str(context_index.resolve())
+        plan.append(plan_entry)
     return plan
 
 
@@ -296,6 +313,69 @@ def build_class_incremental_metrics(
     }
 
 
+def build_sparse_moe_config(args: argparse.Namespace) -> SparseMoEConfig:
+    """Build the explicit Sparse-MoE configuration recorded in every run."""
+
+    temperature = getattr(args, "router_temperature", None)
+    temperature_start = (
+        float(temperature)
+        if temperature is not None
+        else float(getattr(args, "router_temperature_start", 2.0))
+    )
+    temperature_end = (
+        float(temperature)
+        if temperature is not None
+        else float(getattr(args, "router_temperature_end", 1.0))
+    )
+    return SparseMoEConfig(
+        expert_count=int(getattr(args, "expert_count", 5)),
+        top_k=int(getattr(args, "top_k", 2)),
+        expert_bottleneck=float(getattr(args, "expert_bottleneck", 0.25)),
+        router_hidden=int(getattr(args, "router_hidden", 128)),
+        aux_hidden=int(getattr(args, "aux_hidden", 128)),
+        modality_loss_weight=float(getattr(args, "modality_loss_weight", 0.10)),
+        scene_loss_weight=float(getattr(args, "scene_loss_weight", 0.10)),
+        balance_loss_weight=float(getattr(args, "balance_loss_weight", 0.01)),
+        router_z_loss_weight=float(getattr(args, "router_z_loss_weight", 0.001)),
+        anchor_loss_weight=float(getattr(args, "anchor_loss_weight", 0.001)),
+        anchor_rho=float(getattr(args, "anchor_rho", 0.95)),
+        router_temperature_start=temperature_start,
+        router_temperature_end=temperature_end,
+        router_temperature_warmup_epochs=int(
+            getattr(args, "router_temperature_warmup_epochs", 3)
+        ),
+    )
+
+
+def _context_summary_for_stage(stage_plan: dict[str, Any]) -> dict[str, Any]:
+    """Summarize explicit metadata, with a filename fallback for old prep runs."""
+
+    context_index = stage_plan.get("context_index")
+    if context_index:
+        return context_index_summary(read_context_rows(Path(context_index)))
+    data_yaml = Path(stage_plan["data_yaml"])
+    data_config = yaml.safe_load(data_yaml.read_text(encoding="utf-8"))
+    train_value = data_config.get("train") if isinstance(data_config, dict) else None
+    if not isinstance(train_value, str):
+        return {}
+    train_manifest = Path(train_value)
+    if not train_manifest.is_absolute():
+        train_manifest = data_yaml.parent / train_manifest
+    if not train_manifest.is_file():
+        return {}
+    rows = []
+    for image_path in _read_nonempty_paths(train_manifest):
+        context = resolve_context_metadata(image_path)
+        rows.append(
+            {
+                "sensor": context["sensor"],
+                "scene": context["scene"],
+                "metadata_source": context["metadata_source"],
+            }
+        )
+    return context_index_summary(rows)
+
+
 def _training_arguments(args: argparse.Namespace, data_yaml: Path, stage_name: str, seed: int) -> dict:
     augmentation = DISABLED_AUGMENTATION if args.no_builtin_aug else BUILTIN_AUGMENTATION
     kwargs = {
@@ -328,6 +408,8 @@ def _training_arguments(args: argparse.Namespace, data_yaml: Path, stage_name: s
 
 def run_class_incremental(args: argparse.Namespace) -> dict:
     os.environ.setdefault("YOLO_OFFLINE", "true")
+    sparse_moe_enabled = bool(getattr(args, "sparse_moe", False))
+    sparse_moe_config = build_sparse_moe_config(args)
     protocol = load_prepared_protocol(args.prepared)
     plan = validate_experiment(protocol, args.initial_model, args.method, args.buffer_size)
     stop_after_stage = min(args.stop_after_stage, len(plan))
@@ -337,7 +419,7 @@ def run_class_incremental(args: argparse.Namespace) -> dict:
     if evaluation_split not in {"val", "test"}:
         raise ValueError(f"协议 evaluation split 非法: {evaluation_split}")
     if args.dry_run:
-        return {
+        result = {
             "status": "dry_run_ok",
             "scenario": "class_incremental",
             "method": args.method.upper(),
@@ -346,6 +428,14 @@ def run_class_incremental(args: argparse.Namespace) -> dict:
             "evaluation_split": evaluation_split,
             "stages": selected_plan,
         }
+        if sparse_moe_enabled:
+            result.update(
+                {
+                    "sparse_moe": True,
+                    "sparse_moe_config": sparse_moe_config.to_dict(),
+                }
+            )
+        return result
     if args.output.exists() and any(args.output.iterdir()):
         raise FileExistsError(f"输出目录非空，请使用新的实验目录: {args.output}")
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -374,6 +464,7 @@ def run_class_incremental(args: argparse.Namespace) -> dict:
         replay_paths = _read_nonempty_paths(Path(stage_plan["replay_manifest"]))
         model = YOLO(str(previous_checkpoint))
         kwargs = _training_arguments(args, data_yaml, stage_name, args.seed + stage_number - 1)
+        der_context = None
         if args.method == "der" and stage_number > 1:
             context = DERContext(
                 teacher_checkpoint=previous_checkpoint,
@@ -383,14 +474,40 @@ def run_class_incremental(args: argparse.Namespace) -> dict:
                 box_weight=args.der_box_weight,
                 min_confidence=args.der_min_confidence,
             )
-            model.train(trainer=_make_der_trainer(context), **kwargs)
+            der_context = context
+        if sparse_moe_enabled:
+            context_index = (
+                Path(stage_plan["context_index"])
+                if stage_plan.get("context_index")
+                else None
+            )
+            model.train(
+                trainer=make_sparse_moe_trainer(
+                    sparse_moe_config,
+                    context_index=context_index,
+                    der_context=der_context,
+                ),
+                **kwargs,
+            )
+        elif der_context is not None:
+            model.train(trainer=_make_der_trainer(der_context), **kwargs)
         else:
             model.train(**kwargs)
         run_dir = Path(model.trainer.save_dir)
         best_model = run_dir / "weights" / "best.pt"
         if not best_model.is_file():
             raise FileNotFoundError(f"第 {stage_number} 阶段没有生成 best.pt: {best_model}")
+        sparse_training_usage: dict[str, Any] | None = None
+        if sparse_moe_enabled:
+            training_model = getattr(model.trainer, "model", getattr(model, "model", None))
+            training_adapter = get_sparse_moe_adapter(training_model)
+            if training_adapter is not None:
+                sparse_training_usage = training_adapter.usage_tracker.state_dict()
         trained = YOLO(str(best_model))
+        if sparse_training_usage is not None:
+            trained_adapter = get_sparse_moe_adapter(trained.model)
+            if trained_adapter is not None:
+                trained_adapter.usage_tracker.load_state_dict(sparse_training_usage)
         validation_result = trained.val(
             data=str(data_yaml.resolve()),
             split="val",
@@ -423,6 +540,19 @@ def run_class_incremental(args: argparse.Namespace) -> dict:
             test_evaluation = detection_metrics_to_dict(
                 test_result, stage["all_learned_classes"]
             )
+        sparse_artifacts: dict[str, str] = {}
+        sparse_metadata: dict[str, Any] = {"enabled": False}
+        if sparse_moe_enabled:
+            update_sparse_moe_anchors(trained.model)
+            # The stage-best checkpoint is the anchor source for the next
+            # stage, so persist the updated EMA anchor bank in that checkpoint.
+            trained.save(best_model)
+            sparse_artifacts = write_sparse_moe_artifacts(
+                trained.model,
+                run_dir,
+                context_summary=_context_summary_for_stage(stage_plan),
+            )
+            sparse_metadata = sparse_moe_metadata(trained.model)
         stage_summary = {
             "stage": stage_number,
             "task_id": stage["task_id"],
@@ -434,6 +564,7 @@ def run_class_incremental(args: argparse.Namespace) -> dict:
             "input_checkpoint": str(previous_checkpoint),
             "best_model": str(best_model.resolve()),
             "data_yaml": str(data_yaml.resolve()),
+            "context_index": stage_plan.get("context_index"),
             "validation": validation,
             "test": test_evaluation,
             "elapsed_seconds": round(time.perf_counter() - stage_started, 3),
@@ -458,6 +589,13 @@ def run_class_incremental(args: argparse.Namespace) -> dict:
                 "builtin_augmentation_disabled": args.no_builtin_aug,
             },
         }
+        if sparse_moe_enabled:
+            stage_summary.update(
+                {
+                    "sparse_moe": sparse_metadata,
+                    "sparse_moe_artifacts": sparse_artifacts,
+                }
+            )
         (run_dir / "class_incremental_stage_summary.json").write_text(
             json.dumps(stage_summary, ensure_ascii=False, indent=2),
             encoding="utf-8",
@@ -533,6 +671,13 @@ def run_class_incremental(args: argparse.Namespace) -> dict:
             ),
         },
     }
+    if sparse_moe_enabled:
+        summary.update(
+            {
+                "sparse_moe": True,
+                "sparse_moe_config": sparse_moe_config.to_dict(),
+            }
+        )
     (args.output / "class_incremental_training_summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2),
         encoding="utf-8",
@@ -560,6 +705,36 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--der-cls-weight", type=float, default=1.0)
     parser.add_argument("--der-box-weight", type=float, default=0.25)
     parser.add_argument("--der-min-confidence", type=float, default=0.0)
+    parser.add_argument(
+        "--sparse-moe",
+        action="store_true",
+        help="启用第三阶段 Sparse-MoE v1；未指定时保持原 ER/DER 行为",
+    )
+    parser.add_argument("--expert-count", type=int, default=5, help="Sparse-MoE 专家数，默认 5")
+    parser.add_argument("--top-k", type=int, default=2, help="每张图片激活的专家数，默认 Top-2")
+    parser.add_argument(
+        "--expert-bottleneck",
+        type=float,
+        default=0.25,
+        help="专家 1x1 瓶颈比例，默认 0.25",
+    )
+    parser.add_argument("--router-hidden", type=int, default=128, help="路由 MLP 隐层宽度")
+    parser.add_argument("--aux-hidden", type=int, default=128, help="模态/场景辅助头隐层宽度")
+    parser.add_argument("--modality-loss-weight", type=float, default=0.10)
+    parser.add_argument("--scene-loss-weight", type=float, default=0.10)
+    parser.add_argument("--balance-loss-weight", type=float, default=0.01)
+    parser.add_argument("--router-z-loss-weight", type=float, default=0.001)
+    parser.add_argument("--anchor-loss-weight", type=float, default=0.001)
+    parser.add_argument("--anchor-rho", type=float, default=0.95)
+    parser.add_argument(
+        "--router-temperature",
+        type=float,
+        default=None,
+        help="固定路由温度；省略时按 start/end 退火",
+    )
+    parser.add_argument("--router-temperature-start", type=float, default=2.0)
+    parser.add_argument("--router-temperature-end", type=float, default=1.0)
+    parser.add_argument("--router-temperature-warmup-epochs", type=int, default=3)
     parser.add_argument("--no-amp", action="store_true")
     parser.add_argument("--no-plots", action="store_true")
     parser.add_argument("--no-builtin-aug", action="store_true", help="Disable Ultralytics online augmentation for faster CPU fine-tuning.")

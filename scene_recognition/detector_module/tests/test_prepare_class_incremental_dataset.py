@@ -8,6 +8,7 @@ import yaml
 
 from scene_recognition.detector_module import ALL_CLASS_NAMES
 from scene_recognition.detector_module.boxes import parse_yolo_boxes, resolve_label_path
+from scene_recognition.detector_module.context_metadata import CONTEXT_INDEX_FIELDS, read_context_rows
 from scene_recognition.detector_module.prepare_class_incremental_dataset import (
     prepare_class_incremental_dataset,
 )
@@ -134,6 +135,11 @@ class ClassIncrementalPreparationTests(unittest.TestCase):
                 data_yaml = Path(stage["buffers"]["2"]["data_yaml"])
                 data_config = yaml.safe_load(data_yaml.read_text(encoding="utf-8"))
                 self.assertIn("test", data_config)
+                context_rows = read_context_rows(Path(stage["context_index"]))
+                self.assertTrue(context_rows)
+                self.assertEqual(set(context_rows[0]), set(CONTEXT_INDEX_FIELDS))
+                self.assertIn("val", {row["sample_role"] for row in context_rows})
+                self.assertIn("test", {row["sample_role"] for row in context_rows})
 
 
 if __name__ == "__main__":

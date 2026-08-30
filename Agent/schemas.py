@@ -145,6 +145,7 @@ class AgentReport:
     memory: dict[str, Any]
     warnings: list[str] = field(default_factory=list)
     stages: list[PipelineStage] = field(default_factory=list)
+    sparse_moe: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -162,4 +163,5 @@ class AgentReport:
             "memory": _jsonable(self.memory),
             "warnings": list(self.warnings),
             "stages": [stage.to_dict() for stage in self.stages],
+            "sparse_moe": _jsonable(self.sparse_moe),
         }

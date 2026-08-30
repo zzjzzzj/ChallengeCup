@@ -5,6 +5,8 @@ from typing import Any
 
 import numpy as np
 
+from .torch_router import TorchExpertRoute, TorchExpertUsageTracker, TorchSparseExpertRouter
+
 
 @dataclass(frozen=True)
 class ExpertRoute:
@@ -102,3 +104,13 @@ class ExpertUsageTracker:
             "total": self.total,
             "importance": self.importance(),
         }
+
+
+__all__ = [
+    "ExpertRoute",
+    "ExpertUsageTracker",
+    "SparseExpertRouter",
+    "TorchExpertRoute",
+    "TorchExpertUsageTracker",
+    "TorchSparseExpertRouter",
+]
