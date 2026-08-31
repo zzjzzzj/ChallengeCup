@@ -285,14 +285,19 @@ def augment_yolo_dataset(
         "data_yaml": str((output / "data.yaml").resolve()),
         "class_names": names,
         "nc": len(names),
+        "taxonomy": {"nc": len(names), "names": list(names)},
         "include_original": include_original,
         "augmented_split": "train",
         "unaugmented_splits": [split for split in ("val", "test") if splits[split]],
         "source_images": {split: len(values) for split, values in splits.items() if values},
         "output_images": output_counts,
         "operation_counts": op_counts,
+        "generated_augmentation_images": sum(op_counts.values()),
         "manifest": str(manifest_path.resolve()),
+        "augmentation_manifest": str(manifest_path.resolve()),
+        "val_test_augmented": False,
         "offline": True,
+        "privacy": {"local_only": True, "dataset_upload": False},
     }
     (output / "augmentation_summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return summary
