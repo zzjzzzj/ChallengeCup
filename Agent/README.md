@@ -71,6 +71,31 @@ python -m Agent.cli batch `
   --output-dir Agent\runs\batch_demo
 ```
 
+## 固定规则结果描述与 CSV 输出
+
+Agent 不调用大模型或聊天接口生成结果说明。场景分类和目标检测完成后，
+`result_formatter.py` 会使用固定脚本按目标类别分组，统计类别数、每类数量、目标总数和
+每个检测框的置信度，并生成中文描述。例如：
+
+```text
+图像场景分类：海洋。检测到 2 类目标，共 5 个：
+轮船/舰船 3 个（置信度：0.94、0.91、0.88）；巡逻艇 2 个（置信度：0.86、0.82）。
+```
+
+未检出目标时会输出“图像场景分类：海洋。未检测到目标。”。图像模态会保留在 JSON
+报告和批量 CSV 中；默认不写入这段面向用户的描述。
+
+单图 JSON 的顶层 `output_summary` 字段包含以下结构化内容：
+
+- `target_type_count`：检测到的目标类别数；
+- `target_total_count`：目标总数；
+- `targets`：各类别的中文名、数量、全部置信度、最大/平均置信度；
+- `target_details` 与 `description`：可直接展示或写入表格的中文文本。
+
+批量命令继续生成每张图片的 JSON 与 `batch_summary.csv`，并在原有列基础上新增
+`target_type_count`、`target_details`、`max_confidence` 和 `description`。CSV 使用 UTF-8
+BOM 编码，可直接用 Windows Excel 打开。
+
 ## 数据准备 / 训练桥接
 
 下列子命令会转发到 `python train.py ...`，方便从 Agent 入口使用仓库流水线：

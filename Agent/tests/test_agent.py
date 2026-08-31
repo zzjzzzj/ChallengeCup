@@ -34,6 +34,9 @@ class AgentFlowTests(unittest.TestCase):
         self.assertEqual(report["scene"]["label"], "sea")
         self.assertEqual(report["detections"][0]["class_name"], "warship")
         self.assertEqual(report["consistency"]["status"], "consistent")
+        self.assertEqual(report["output_summary"]["target_type_count"], 1)
+        self.assertEqual(report["output_summary"]["target_total_count"], 1)
+        self.assertIn("轮船/舰船 1 个", report["output_summary"]["description"])
         self.assertIn("policy_source", report["decision"])
         self.assertEqual(report["decision"]["policy_source"], "image_processing.scene_runtime.DEFAULT_POLICY")
 

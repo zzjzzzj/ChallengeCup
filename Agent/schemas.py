@@ -139,6 +139,7 @@ class AgentReport:
     environment: dict[str, Any]
     preprocessing: dict[str, Any]
     detections: list[DetectionBox]
+    output_summary: dict[str, Any]
     consistency: dict[str, Any]
     decision: dict[str, Any]
     losses: dict[str, Any]
@@ -157,6 +158,7 @@ class AgentReport:
             "environment": _jsonable(self.environment),
             "preprocessing": _jsonable(self.preprocessing),
             "detections": [box.to_dict() for box in self.detections],
+            "output_summary": _jsonable(self.output_summary),
             "consistency": _jsonable(self.consistency),
             "decision": _jsonable(self.decision),
             "losses": _jsonable(self.losses),

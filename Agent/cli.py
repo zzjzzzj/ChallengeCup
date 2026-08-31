@@ -124,6 +124,10 @@ def batch(args: argparse.Namespace) -> None:
                 "modality": report_dict["modality"]["label"],
                 "scene": report_dict["final_scene"]["label"],
                 "target_count": len(report_dict["detections"]),
+                "target_type_count": report_dict["output_summary"]["target_type_count"],
+                "target_details": report_dict["output_summary"]["target_details"],
+                "max_confidence": report_dict["output_summary"]["max_confidence"],
+                "description": report_dict["output_summary"]["description"],
                 "consistency": report_dict["consistency"]["status"],
                 "loss_total": report_dict["losses"]["total"],
             }
