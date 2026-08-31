@@ -383,8 +383,13 @@ def run_batch_incremental(args: argparse.Namespace) -> dict:
             der_context = Context(previous_checkpoint, tuple(replay_paths), args.der_weight, args.der_cls_weight, args.der_box_weight, args.der_min_confidence)
         if sparse_enabled:
             from scene_recognition.detector_module.train_class_incremental_yolo import build_sparse_moe_config
-            from scene_recognition.detector_module.sparse_moe_model import get_sparse_moe_adapter
-            from scene_recognition.detector_module.sparse_moe_checkpoint import update_sparse_moe_anchors, write_sparse_moe_artifacts, sparse_moe_metadata
+            from scene_recognition.detector_module.sparse_moe_checkpoint import (
+                restore_sparse_moe_usage,
+                sparse_moe_metadata,
+                sparse_moe_usage_state,
+                update_sparse_moe_anchors,
+                write_sparse_moe_artifacts,
+            )
             from scene_recognition.detector_module.sparse_moe_trainer import make_sparse_moe_trainer
             sparse_config = build_sparse_moe_config(args)
             model.train(trainer=make_sparse_moe_trainer(sparse_config, context_index=Path(batch["context_index"]) if batch.get("context_index") else None, der_context=der_context), **kwargs)
@@ -396,7 +401,15 @@ def run_batch_incremental(args: argparse.Namespace) -> dict:
         best = run_dir / "weights" / "best.pt"
         if not best.is_file():
             raise FileNotFoundError(f"批次 {batch_id} 没有生成 best.pt: {best}")
+        sparse_training_usage: dict[str, Any] | None = None
+        if sparse_enabled:
+            training_model = getattr(model.trainer, "model", getattr(model, "model", None))
+            sparse_training_usage = sparse_moe_usage_state(training_model)
+            if sparse_training_usage is None:
+                raise RuntimeError(f"批次 {batch_id} 训练完成但未找到 Sparse-MoE usage tracker")
         trained = YOLO(str(best))
+        if sparse_enabled and not restore_sparse_moe_usage(trained.model, sparse_training_usage):
+            raise RuntimeError(f"批次 {batch_id} best checkpoint 未恢复 Sparse-MoE usage tracker")
         validation_obj = trained.val(data=str(Path(batch["data_yaml"]).resolve()), split="val", imgsz=args.image_size, batch=args.batch_size, workers=args.workers, device=args.device, project=str(run_dir), name="batch_val", exist_ok=True, plots=not args.no_plots, verbose=False)
         validation = detection_metrics_to_dict(validation_obj, ALL_CLASS_NAMES)
         seen_values = [validation["per_class"][name]["map50"] for name in batch["seen"] if validation["per_class"].get(name, {}).get("map50") is not None]
