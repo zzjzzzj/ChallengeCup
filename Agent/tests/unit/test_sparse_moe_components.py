@@ -88,6 +88,23 @@ class SparseMoEComponentTests(unittest.TestCase):
         self.assertEqual(stats.shape, (2, 4))
         self.assertTrue(torch.isfinite(stats).all())
 
+    def test_adapter_bank_mixed_dtype_is_safe_under_cpu_autocast(self) -> None:
+        torch.manual_seed(17)
+        bank = SparseExpertAdapterBank(4, expert_count=2, bottleneck_ratio=0.5)
+        features = torch.randn(2, 4, 6, 6, requires_grad=True)
+        expert_ids = torch.tensor([[0, 1], [1, 0]], dtype=torch.long)
+        expert_weights = torch.tensor(
+            [[0.75, 0.25], [0.25, 0.75]], dtype=torch.float32, requires_grad=True
+        )
+        with torch.autocast(device_type="cpu", dtype=torch.bfloat16):
+            output = bank(features, expert_ids, expert_weights)
+            loss = output.square().mean()
+        self.assertEqual(output.dtype, features.dtype)
+        self.assertTrue(torch.isfinite(output).all())
+        loss.backward()
+        self.assertIsNotNone(features.grad)
+        self.assertIsNotNone(expert_weights.grad)
+
     def test_masked_auxiliary_loss_skips_unknown_metadata(self) -> None:
         heads = ModalitySceneAuxiliaryHeads([4, 8], hidden_channels=12)
         outputs = heads((torch.randn(3, 4, 5, 5), torch.randn(3, 8, 3, 3)))

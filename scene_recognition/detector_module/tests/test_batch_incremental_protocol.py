@@ -133,6 +133,9 @@ class BatchIncrementalProtocolTests(unittest.TestCase):
             )
             self.assertTrue(plan["offline"])
             self.assertIn("--sparse-moe", plan["training_commands"]["200"])
+            self.assertIn("--no-amp", plan["commands"][1])
+            self.assertIn("--no-amp", plan["training_commands"]["200"])
+            self.assertEqual(plan["audit"]["amp"], "disabled_to_prevent_Ultralytics_networked_AMP_probe")
             self.assertEqual(plan["audit"]["test"], "after_final_batch_only")
 
     def test_missing_actual_new_class_fails_before_preparation(self) -> None:

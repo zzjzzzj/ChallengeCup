@@ -73,7 +73,13 @@ class SparseExpertAdapter(nn.Module):
     def forward(self, features: torch.Tensor) -> torch.Tensor:
         """Apply the adapter as an identity-preserving residual transform."""
 
-        return features + self.forward_residual(features)
+        residual = self.forward_residual(features)
+        # AMP may run the bottleneck convolutions in a lower precision than
+        # the incoming feature map.  Cast only the residual at the merge so
+        # the result stays on the feature device/dtype while preserving the
+        # differentiable ``to`` operation for the adapter parameters.
+        residual = residual.to(device=features.device, dtype=features.dtype)
+        return features + residual
 
 
 class SparseExpertAdapterBank(nn.Module):
@@ -128,7 +134,14 @@ class SparseExpertAdapterBank(nn.Module):
                 continue
             weights = expert_weights.masked_fill(~selected, 0.0).sum(dim=1)[image_mask]
             residual = adapter.forward_residual(features[image_mask])
-            output[image_mask] = output[image_mask] + residual * weights[:, None, None, None]
+            # ``output`` is a clone of features, whereas autocast can make
+            # the expert residual/route weights float16 or bfloat16.  Align
+            # both operands before the indexed accumulation; otherwise an
+            # in-place assignment fails when AMP returns a mixed dtype.
+            residual = residual.to(device=output.device, dtype=output.dtype)
+            weights = weights.to(device=output.device, dtype=output.dtype)
+            weighted_residual = residual * weights[:, None, None, None]
+            output[image_mask] = output[image_mask] + weighted_residual
         return output
 
     def execution_counts(self) -> list[int]:

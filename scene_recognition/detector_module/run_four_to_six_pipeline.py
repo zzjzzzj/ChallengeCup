@@ -85,7 +85,7 @@ def build_pipeline_plan(
     python = sys.executable
     augment_args = ["--default-modality", default_modality] if default_modality else []
     commands.append([python, "-m", "scene_recognition.detector_module.augment_yolo_dataset", "--data", str(base_data), "--output", str(base_aug), *augment_args])
-    commands.append([python, "-m", "scene_recognition.detector_module.train_detector", "--data", str(base_aug / "data.yaml"), "--model", str(generic_model), "--epochs", str(base_epochs), "--project", str(runs), "--name", "base_four", "--device", device, "--seed", str(seed), "--no-builtin-aug"])
+    commands.append([python, "-m", "scene_recognition.detector_module.train_detector", "--data", str(base_aug / "data.yaml"), "--model", str(generic_model), "--epochs", str(base_epochs), "--project", str(runs), "--name", "base_four", "--device", device, "--seed", str(seed), "--no-builtin-aug", "--no-amp"])
     commands.append([python, "-m", "scene_recognition.detector_module.augment_yolo_dataset", "--data", str(increment_data), "--output", str(increment_aug), *augment_args])
     prepare_command = [python, "-m", "scene_recognition.detector_module.prepare_batch_incremental_dataset", "--base-data", str(base_aug / "data.yaml"), "--increment-data", str(increment_aug / "data.yaml"), "--output", str(prepared), "--seed", str(seed)]
     if batch_plan is not None:
@@ -100,7 +100,7 @@ def build_pipeline_plan(
     train_commands: dict[str, list[str]] = {}
     for value in dict.fromkeys(int(item) for item in buffer_sizes):
         output = runs / f"batch_il_{method}_{value}"
-        command = [python, "-m", "scene_recognition.detector_module.train_batch_incremental_yolo", "--prepared", str(prepared), "--initial-checkpoint", str(runs / "base_four" / "weights" / "best.pt"), "--method", method, "--buffer-size", str(value), "--output", str(output), "--epochs", str(increment_epochs), "--seed", str(seed), "--device", device, "--no-builtin-aug"]
+        command = [python, "-m", "scene_recognition.detector_module.train_batch_incremental_yolo", "--prepared", str(prepared), "--initial-checkpoint", str(runs / "base_four" / "weights" / "best.pt"), "--method", method, "--buffer-size", str(value), "--output", str(output), "--epochs", str(increment_epochs), "--seed", str(seed), "--device", device, "--no-builtin-aug", "--no-amp"]
         if sparse_moe:
             command.append("--sparse-moe")
             for flag, option_name in (
@@ -145,7 +145,7 @@ def build_pipeline_plan(
         "increment_epochs": increment_epochs,
         "commands": commands,
         "training_commands": train_commands,
-        "audit": {"base_taxonomy": BASE_CLASS_NAMES, "increment_taxonomy": ALL_CLASS_NAMES, "built_in_augmentation": "disabled", "validation": "val", "test": "after_final_batch_only"},
+        "audit": {"base_taxonomy": BASE_CLASS_NAMES, "increment_taxonomy": ALL_CLASS_NAMES, "built_in_augmentation": "disabled", "amp": "disabled_to_prevent_Ultralytics_networked_AMP_probe", "validation": "val", "test": "after_final_batch_only"},
     }
 
 
