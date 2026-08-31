@@ -194,16 +194,20 @@ def validate_prepared_protocol(summary: dict, buffer_size: int) -> list[dict]:
     return selected
 
 
-def build_batch_metrics(results: list[dict], class_order: Sequence[str] = ALL_CLASS_NAMES) -> dict:
-    """Build AP-by-batch, first-arrival, forgetting and BWT summaries."""
-
+def _batch_metric_payload(
+    results: list[dict], class_order: Sequence[str], metric_name: str
+) -> dict:
     rows: list[dict[str, float | None]] = []
     arrivals: dict[str, int] = {}
     for index, result in enumerate(results, start=1):
         validation = result.get("validation") or {}
         per_class = validation.get("per_class", {})
         seen = set(result.get("seen", result.get("present", [])))
-        rows.append({name: (float(per_class[name]["map50"]) if name in seen and per_class.get(name, {}).get("map50") is not None else None) for name in class_order})
+        row: dict[str, float | None] = {}
+        for name in class_order:
+            value = per_class.get(name, {}).get(metric_name)
+            row[name] = float(value) if name in seen and value is not None else None
+        rows.append(row)
         for name in seen:
             arrivals.setdefault(name, index)
     first_arrival = {name: arrivals[name] for name in class_order if name in arrivals}
@@ -217,10 +221,15 @@ def build_batch_metrics(results: list[dict], class_order: Sequence[str] = ALL_CL
         if start is not None and final is not None:
             bwt[name] = final - start
             forgetting[name] = max(history) - final if history else 0.0
-    stage_means = [sum(value for value in row.values() if value is not None) / len([value for value in row.values() if value is not None]) for row in rows if any(value is not None for value in row.values())]
+    stage_means = [
+        sum(value for value in row.values() if value is not None)
+        / len([value for value in row.values() if value is not None])
+        for row in rows
+        if any(value is not None for value in row.values())
+    ]
     final_values = [value for value in final_row.values() if value is not None]
     return {
-        "metric": "map50",
+        "metric": metric_name,
         "class_order": list(class_order),
         "rows": rows,
         "first_arrival": first_arrival,
@@ -230,6 +239,28 @@ def build_batch_metrics(results: list[dict], class_order: Sequence[str] = ALL_CL
         "average_forgetting": sum(forgetting.values()) / len(forgetting) if forgetting else None,
         "backward_transfer": bwt,
         "average_backward_transfer": sum(bwt.values()) / len(bwt) if bwt else None,
+    }
+
+
+def build_batch_metrics(results: list[dict], class_order: Sequence[str] = ALL_CLASS_NAMES) -> dict:
+    """Build both mAP@0.5 and mAP@0.5:0.95 batch matrices and drift metrics."""
+
+    map50 = _batch_metric_payload(results, class_order, "map50")
+    map50_95 = _batch_metric_payload(results, class_order, "map50_95")
+    # Keep the map50 fields at the top level for simple consumers while
+    # exposing a complete, parallel payload for the stricter AP metric.
+    return {
+        "class_order": list(class_order),
+        "first_arrival": map50["first_arrival"],
+        "map50": map50,
+        "map50_95": map50_95,
+        "rows": map50["rows"],
+        "final_average": map50["final_average"],
+        "average_seen_accuracy": map50["average_seen_accuracy"],
+        "forgetting": map50["forgetting"],
+        "average_forgetting": map50["average_forgetting"],
+        "backward_transfer": map50["backward_transfer"],
+        "average_backward_transfer": map50["average_backward_transfer"],
     }
 
 

@@ -4,6 +4,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import yaml
 from PIL import Image
@@ -14,7 +15,7 @@ from scene_recognition.detector_module.prepare_batch_incremental_dataset import 
     _normalise_plan,
     prepare_batch_incremental_dataset,
 )
-from scene_recognition.detector_module.run_four_to_six_pipeline import build_pipeline_plan
+from scene_recognition.detector_module.run_four_to_six_pipeline import build_pipeline_plan, run_pipeline
 from scene_recognition.detector_module.train_batch_incremental_yolo import run_batch_incremental
 from test_support import workspace_test_directory
 
@@ -133,6 +134,78 @@ class BatchIncrementalProtocolTests(unittest.TestCase):
             self.assertTrue(plan["offline"])
             self.assertIn("--sparse-moe", plan["training_commands"]["200"])
             self.assertEqual(plan["audit"]["test"], "after_final_batch_only")
+
+    def test_missing_actual_new_class_fails_before_preparation(self) -> None:
+        with workspace_test_directory("batch-il-missing-arrival") as root:
+            base = self._dataset(root / "base", BASE_CLASS_NAMES)
+            increment = self._dataset(root / "increment", ALL_CLASS_NAMES)
+            base_out = root / "base_aug"
+            increment_out = root / "increment_aug"
+            augment_yolo_dataset(base, base_out, default_modality="ir")
+            augment_yolo_dataset(increment, increment_out, default_modality="ir")
+            for image in (increment_out / "images" / "train").glob("*train_5*"):
+                image.unlink()
+                (increment_out / "labels" / "train" / f"{image.stem}.txt").unlink()
+            with self.assertRaisesRegex(ValueError, "实际到达"):
+                prepare_batch_incremental_dataset(
+                    base_out / "data.yaml",
+                    increment_out / "data.yaml",
+                    root / "prepared",
+                    batch_plan={"batches": [{"id": "b1", "classes": ["patrol_boat"]}, {"id": "b2", "classes": ["armored_vehicle"]}]},
+                    buffer_sizes=(200,),
+                )
+
+    def test_augmentation_force_never_deletes_existing_directory(self) -> None:
+        with workspace_test_directory("batch-il-force-safety") as root:
+            source = self._dataset(root / "source", BASE_CLASS_NAMES)
+            output = root / "existing"
+            output.mkdir()
+            marker = output / "keep.txt"
+            marker.write_text("keep", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "force 已禁用"):
+                augment_yolo_dataset(source, output, default_modality="ir", force=True)
+            self.assertEqual(marker.read_text(encoding="utf-8"), "keep")
+
+    def test_pipeline_completion_records_final_models_and_training_summaries(self) -> None:
+        with workspace_test_directory("batch-il-pipeline-complete") as root:
+            base = self._dataset(root / "base", BASE_CLASS_NAMES)
+            increment = self._dataset(root / "increment", ALL_CLASS_NAMES)
+            generic = root / "generic.pt"
+            generic.write_bytes(b"local model")
+            workspace = root / "workspace"
+            args = __import__(
+                "scene_recognition.detector_module.run_four_to_six_pipeline",
+                fromlist=["parse_args"],
+            ).parse_args(
+                [
+                    "--base-data", str(base), "--increment-data", str(increment),
+                    "--generic-model", str(generic), "--workspace", str(workspace),
+                    "--num-batches", "2", "--buffer-size", "200", "--base-epochs", "1",
+                    "--increment-epochs", "1",
+                ]
+            )
+
+            def fake_run(command, **_kwargs):
+                if any("train_detector" in part and "train_batch" not in part for part in command):
+                    checkpoint = workspace / "runs" / "base_four" / "weights" / "best.pt"
+                    checkpoint.parent.mkdir(parents=True, exist_ok=True)
+                    checkpoint.write_bytes(b"checkpoint")
+                if any("train_batch_incremental_yolo" in part for part in command):
+                    output = Path(command[command.index("--output") + 1])
+                    output.mkdir(parents=True, exist_ok=True)
+                    final = output / "batch_02" / "weights" / "best.pt"
+                    final.parent.mkdir(parents=True, exist_ok=True)
+                    final.write_bytes(b"final")
+                    (output / "batch_incremental_training_summary.json").write_text(
+                        json.dumps({"scenario": "batch_class_incremental", "final_model": str(final)}),
+                        encoding="utf-8",
+                    )
+
+            with patch("scene_recognition.detector_module.run_four_to_six_pipeline.subprocess.run", side_effect=fake_run):
+                result = run_pipeline(args)
+            self.assertEqual(result["status"], "complete")
+            self.assertIn("200", result["final_models"])
+            self.assertEqual(result["training_summaries"]["200"]["final_model"], result["final_models"]["200"])
 
 
 if __name__ == "__main__":

@@ -28,6 +28,7 @@ from scene_recognition.detector_module.boxes import YoloBox, parse_yolo_boxes, r
 from scene_recognition.detector_module.context_metadata import (
     build_context_row,
     context_index_summary,
+    resolve_context_metadata,
     write_context_index,
 )
 
@@ -133,6 +134,9 @@ def _read_manifest(path: Path | None) -> dict[str, dict[str, str]]:
             mapping[output] = {
                 "source_key": source.casefold(),
                 "operation": str(row.get("operation_key") or row.get("operation") or "unknown"),
+                "sensor": str(row.get("sensor") or "").strip().casefold(),
+                "scene": str(row.get("scene") or "").strip().casefold(),
+                "metadata_source": str(row.get("metadata_source") or "").strip(),
             }
     return mapping
 
@@ -165,7 +169,25 @@ def _scan(data_yaml: Path, split: str, expected_count: int, *, required: bool = 
         label = resolve_label_path(image)
         boxes = tuple(parse_yolo_boxes(label, expected_count))
         source_key, operation = _source_key(image, manifest)
-        context = {"source_image": source_key, "sensor": "unknown", "scene": "unknown", "metadata_source": "unknown"}
+        info = manifest.get(image.name.casefold(), {})
+        context = resolve_context_metadata(
+            source_key,
+            sensor=info.get("sensor"),
+            scene=info.get("scene"),
+            metadata_source=info.get("metadata_source") or None,
+        )
+        # A provenance source may be an opaque path.  Preserve authoritative
+        # manifest values, but fill unknown fields from the materialized name
+        # for existing IR/SAR + scene datasets.
+        filename_context = resolve_context_metadata(image.name)
+        for field in ("sensor", "scene"):
+            if context[field] == "unknown" and filename_context[field] != "unknown":
+                context[field] = filename_context[field]
+        if context["metadata_source"] == "unknown" and any(
+            context[field] != "unknown" for field in ("sensor", "scene")
+        ):
+            context["metadata_source"] = "filename_fallback"
+        context = {"source_image": source_key, **context}
         samples.append(Sample(image.resolve(), boxes, source_key, operation, context))
     return samples
 
@@ -512,7 +534,6 @@ def prepare_batch_incremental_dataset(
         raise ValueError("max-current-images-per-class 必须为正整数")
     if output.exists() and any(output.iterdir()):
         raise FileExistsError(f"输出目录非空，请选择新目录: {output}")
-    output.mkdir(parents=True, exist_ok=True)
     plan = _normalise_plan(batch_plan, num_batches, seed)
     base_train = _scan(base_data, "train", len(BASE_CLASS_NAMES), required=True)
     increment_train = _scan(increment_data, "train", len(ALL_CLASS_NAMES), required=True)
@@ -523,6 +544,14 @@ def prepare_batch_incremental_dataset(
     if missing_base:
         raise ValueError(f"base-data train 缺少基础类别: {[BASE_CLASS_NAMES[index] for index in missing_base]}")
     assignments = _assign_groups(increment_train, plan, seed)
+    required_new = set(ALL_CLASS_NAMES[len(BASE_CLASS_NAMES):])
+    absent_new = sorted(required_new - set(assignments))
+    if absent_new:
+        raise ValueError(
+            "两个新增类都必须在 increment train 实际到达；缺少 current: "
+            + ", ".join(absent_new)
+        )
+    output.mkdir(parents=True, exist_ok=True)
     consumed: dict[str, set[str]] = defaultdict(set)
     previous_seen: set[int] = set(range(len(BASE_CLASS_NAMES)))
     consumed_samples: list[Sample] = []
@@ -604,6 +633,12 @@ def prepare_batch_incremental_dataset(
         for class_name in batch["present"]:
             if class_name in ALL_CLASS_NAMES[len(BASE_CLASS_NAMES):]:
                 first_arrival_batch.setdefault(class_name, int(batch["index"]))
+    missing_arrivals = sorted(required_new - set(first_arrival_batch))
+    if missing_arrivals:
+        raise ValueError(
+            "准备完成前必须出现两个新增类的 first_arrival_batch；缺少: "
+            + ", ".join(missing_arrivals)
+        )
     summary = {
         "protocol_version": "batch-class-incremental-v1",
         "scenario": "batch_class_incremental",

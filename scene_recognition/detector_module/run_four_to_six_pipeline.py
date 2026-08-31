@@ -185,6 +185,23 @@ def run_pipeline(args: argparse.Namespace) -> dict:
         subprocess.run(command, cwd=Path(__file__).resolve().parents[2], env=environment, check=True)
     plan["status"] = "complete"
     plan["base_checkpoint"] = str((workspace / "runs" / "base_four" / "weights" / "best.pt").resolve())
+    final_models: dict[str, str] = {}
+    training_summaries: dict[str, dict] = {}
+    training_summary_paths: dict[str, str] = {}
+    for value in plan["buffer_sizes"]:
+        summary_path = workspace / "runs" / f"batch_il_{plan['method']}_{value}" / "batch_incremental_training_summary.json"
+        if not summary_path.is_file():
+            raise FileNotFoundError(f"batch-il 完成但缺少训练 summary: {summary_path}")
+        training_summary = json.loads(summary_path.read_text(encoding="utf-8-sig"))
+        if not isinstance(training_summary, dict) or not training_summary.get("final_model"):
+            raise ValueError(f"batch-il summary 缺少 final_model: {summary_path}")
+        key = str(value)
+        final_models[key] = str(training_summary["final_model"])
+        training_summaries[key] = training_summary
+        training_summary_paths[key] = str(summary_path.resolve())
+    plan["final_models"] = final_models
+    plan["training_summaries"] = training_summaries
+    plan["training_summary_paths"] = training_summary_paths
     (workspace / "pipeline_plan.json").write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return plan
 

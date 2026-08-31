@@ -143,15 +143,16 @@ def _write_yaml(output: Path, names: list[str], split_paths: dict[str, Path]) ->
     (output / "data.yaml").write_text(yaml.safe_dump(config, allow_unicode=True, sort_keys=False), encoding="utf-8")
 
 
-def _ensure_empty_or_absent(output: Path, force: bool) -> None:
+def _ensure_empty_or_absent(output: Path, force: bool = False) -> None:
+    if force:
+        # This command must never recursively remove an arbitrary user
+        # directory.  Rebuilds are intentionally explicit: choose a fresh
+        # output path (or remove a known artifact outside this command).
+        raise ValueError("--force 已禁用；为避免误删，请选择不存在或为空的输出目录")
     if not output.exists():
         return
-    if any(output.iterdir()) and not force:
-        raise FileExistsError(f"输出目录非空，请选择新目录或使用 --force: {output}")
-    if force:
-        if output.resolve().parent == output.resolve():
-            raise ValueError("拒绝删除文件系统根目录")
-        shutil.rmtree(output)
+    if any(output.iterdir()):
+        raise FileExistsError(f"输出目录非空，请选择新的输出目录: {output}")
 
 
 def augment_yolo_dataset(
@@ -310,7 +311,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--default-modality", choices=("ir", "sar"))
     parser.add_argument("--no-original", dest="include_original", action="store_false")
     parser.set_defaults(include_original=True)
-    parser.add_argument("--force", action="store_true", help="允许删除并重建非空输出目录")
     return parser.parse_args(argv)
 
 
@@ -321,7 +321,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.output,
         include_original=args.include_original,
         default_modality=args.default_modality,
-        force=args.force,
+        force=False,
     )
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0
