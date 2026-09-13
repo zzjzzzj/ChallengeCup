@@ -53,6 +53,61 @@ Check the environment:
 bash deployment/ascend310bplus/check_env.sh
 ```
 
+## Optional Board-Side Class-IL Training
+
+`run_class_il_training.sh` wraps the Windows PowerShell training settings in a
+path-parameterized Bash script. The Ascend 310B path that is most reliable for
+this project is still inference; full YOLO training on the board should be
+treated as slow on CPU or experimental on `torch_npu`.
+
+Run DER and ER with paths derived from one private data folder:
+
+```bash
+cd ~/Desktop/workspace/ChallengeCup
+conda activate cc_env
+
+bash deployment/ascend310bplus/run_class_il_training.sh \
+  --private-root "$PWD/数据集（不上传git）" \
+  --method both
+```
+
+If the dataset location changes, pass the paths directly:
+
+```bash
+bash deployment/ascend310bplus/run_class_il_training.sh \
+  --data "/path/to/yolo_r1_r2inc_augmented_full_tvt_seed42" \
+  --prepared "/path/to/class_il_prepared_sparse_moe_seed42" \
+  --initial-model "/path/to/yolo26n.pt" \
+  --output-root "/path/to/runs" \
+  --method der
+```
+
+The script defaults to `--device cpu`, `--batch-size 2`, and `--workers 0` for
+the board. If a prepared directory already exists, reuse it explicitly:
+
+```bash
+bash deployment/ascend310bplus/run_class_il_training.sh \
+  --private-root "$PWD/数据集（不上传git）" \
+  --skip-prepare \
+  --method er
+```
+
+For a quick environment smoke test:
+
+```bash
+bash deployment/ascend310bplus/run_class_il_training.sh \
+  --private-root "$PWD/数据集（不上传git）" \
+  --method der \
+  --smoke-test
+```
+
+Final weights are written under:
+
+```text
+runs/class_il_sparse_moe_der_b500_e30_seed42/stage_06_armored_vehicle/weights/best.pt
+runs/class_il_sparse_moe_er_b500_e30_seed42/stage_06_armored_vehicle/weights/best.pt
+```
+
 ## Convert ONNX To OM
 
 The inference script converts ONNX models automatically. To convert first:
