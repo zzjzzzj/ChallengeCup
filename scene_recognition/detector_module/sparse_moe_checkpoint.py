@@ -23,6 +23,27 @@ def sparse_moe_metadata(model: nn.Module) -> dict[str, Any]:
     return {"enabled": True, **adapter.metadata()}
 
 
+def sparse_moe_usage_state(model: nn.Module) -> dict[str, Any] | None:
+    """Snapshot per-stage router usage before a checkpoint is reloaded."""
+
+    adapter = get_sparse_moe_adapter(model)
+    if adapter is None:
+        return None
+    return copy.deepcopy(adapter.usage_tracker.state_dict())
+
+
+def restore_sparse_moe_usage(model: nn.Module, state: dict[str, Any] | None) -> bool:
+    """Restore a captured per-stage usage snapshot into a reloaded model."""
+
+    if state is None:
+        return False
+    adapter = get_sparse_moe_adapter(model)
+    if adapter is None:
+        return False
+    adapter.usage_tracker.load_state_dict(state)
+    return True
+
+
 def update_sparse_moe_anchors(model: nn.Module) -> dict[str, float]:
     adapter = get_sparse_moe_adapter(model)
     if adapter is None:
@@ -134,8 +155,10 @@ def read_sparse_moe_config(path: str | Path) -> SparseMoEConfig:
 __all__ = [
     "load_sparse_moe_checkpoint",
     "read_sparse_moe_config",
+    "restore_sparse_moe_usage",
     "save_sparse_moe_checkpoint",
     "sparse_moe_metadata",
+    "sparse_moe_usage_state",
     "update_sparse_moe_anchors",
     "write_sparse_moe_artifacts",
 ]

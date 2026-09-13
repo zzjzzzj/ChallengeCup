@@ -16,7 +16,9 @@ from Agent.models.experts.sparse_adapter import SparseExpertAdapter, SparseExper
 from Agent.models.experts.torch_router import TorchExpertUsageTracker, TorchSparseExpertRouter
 from scene_recognition.detector_module.sparse_moe_checkpoint import (
     load_sparse_moe_checkpoint,
+    restore_sparse_moe_usage,
     save_sparse_moe_checkpoint,
+    sparse_moe_usage_state,
 )
 from scene_recognition.detector_module.sparse_moe_model import (
     SparseMoEConfig,
@@ -88,6 +90,23 @@ class SparseMoEComponentTests(unittest.TestCase):
         self.assertEqual(stats.shape, (2, 4))
         self.assertTrue(torch.isfinite(stats).all())
 
+    def test_adapter_bank_mixed_dtype_is_safe_under_cpu_autocast(self) -> None:
+        torch.manual_seed(17)
+        bank = SparseExpertAdapterBank(4, expert_count=2, bottleneck_ratio=0.5)
+        features = torch.randn(2, 4, 6, 6, requires_grad=True)
+        expert_ids = torch.tensor([[0, 1], [1, 0]], dtype=torch.long)
+        expert_weights = torch.tensor(
+            [[0.75, 0.25], [0.25, 0.75]], dtype=torch.float32, requires_grad=True
+        )
+        with torch.autocast(device_type="cpu", dtype=torch.bfloat16):
+            output = bank(features, expert_ids, expert_weights)
+            loss = output.square().mean()
+        self.assertEqual(output.dtype, features.dtype)
+        self.assertTrue(torch.isfinite(output).all())
+        loss.backward()
+        self.assertIsNotNone(features.grad)
+        self.assertIsNotNone(expert_weights.grad)
+
     def test_masked_auxiliary_loss_skips_unknown_metadata(self) -> None:
         heads = ModalitySceneAuxiliaryHeads([4, 8], hidden_channels=12)
         outputs = heads((torch.randn(3, 4, 5, 5), torch.randn(3, 8, 3, 3)))
@@ -127,6 +146,25 @@ class SparseMoEComponentTests(unittest.TestCase):
         self.assertEqual(restored_adapter.sparse_moe_config.expert_count, 3)
         self.assertTrue(restored_adapter.anchor_bank.has_anchors)
         self.assertEqual(restored_adapter.anchor_bank.importance["expert_0"], 0.5)
+
+    def test_sparse_usage_snapshot_survives_best_model_reload(self) -> None:
+        config = SparseMoEConfig(expert_count=3, top_k=2, aux_hidden=16, router_hidden=16)
+        source_adapter = SparseMoEDetectAdapter(_FakeDetect(), config, input_channels=[4])
+        source_model = _FakeDetectionModel(source_adapter)
+        source_state = source_adapter.usage_tracker.state_dict()
+        source_state["total_images"] = 7
+        source_state["top_counts"] = [4, 5, 0]
+        source_state["soft_probability_sum"] = [3.0, 4.0, 0.0]
+        source_adapter.usage_tracker.load_state_dict(source_state)
+        captured = sparse_moe_usage_state(source_model)
+        self.assertIsNotNone(captured)
+        self.assertEqual(captured["total_images"], 7)
+
+        reloaded_adapter = SparseMoEDetectAdapter(_FakeDetect(), config, input_channels=[4])
+        reloaded_model = _FakeDetectionModel(reloaded_adapter)
+        self.assertTrue(restore_sparse_moe_usage(reloaded_model, captured))
+        self.assertEqual(reloaded_adapter.usage_tracker.to_dict()["total_images"], 7)
+        self.assertGreater(reloaded_adapter.usage_tracker.to_dict()["max_occupancy"], 0.0)
 
 
 if __name__ == "__main__":

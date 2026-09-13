@@ -13,13 +13,13 @@ from .modality import ModalityRecognizer, normalize_modality
 from .reasoning import (
     build_consistency_report,
     build_decision,
-    describe_scene,
     resolve_final_scene,
     summarize_detection_confidence,
 )
 from .scene import SceneRecognizer, build_environment_state
 from .schemas import AgentReport, PipelineStage
 from .target import TargetClassifier
+from result_formatter import build_image_summary
 
 
 class IntelligentRecognitionAgent:
@@ -184,7 +184,12 @@ class IntelligentRecognitionAgent:
         final_scene = resolve_final_scene(scene, modality, detections)
         consistency = build_consistency_report(scene, final_scene, detections)
         decision = build_decision(modality, final_scene, environment, detections)
-        decision["description"] = describe_scene(modality, final_scene, detections, consistency)
+        output_summary = build_image_summary(
+            detections,
+            scene_label=final_scene.label,
+            modality_label=modality.label,
+        )
+        decision["description"] = output_summary["description"]
         stages.append(
             PipelineStage(
                 "scene_target_reasoning",
@@ -221,6 +226,7 @@ class IntelligentRecognitionAgent:
             environment=environment,
             preprocessing=preprocessing,
             detections=detections,
+            output_summary=output_summary,
             consistency=consistency,
             decision=decision,
             losses=losses,

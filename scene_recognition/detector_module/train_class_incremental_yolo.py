@@ -24,11 +24,13 @@ from scene_recognition.detector_module.context_metadata import (
 from scene_recognition.detector_module.metrics import detection_metrics_to_dict
 from scene_recognition.detector_module.prepare_class_incremental_dataset import BUFFER_SIZE_CHOICES
 from scene_recognition.detector_module.sparse_moe_checkpoint import (
+    restore_sparse_moe_usage,
     sparse_moe_metadata,
+    sparse_moe_usage_state,
     update_sparse_moe_anchors,
     write_sparse_moe_artifacts,
 )
-from scene_recognition.detector_module.sparse_moe_model import SparseMoEConfig, get_sparse_moe_adapter
+from scene_recognition.detector_module.sparse_moe_model import SparseMoEConfig
 from scene_recognition.detector_module.sparse_moe_trainer import make_sparse_moe_trainer
 from scene_recognition.detector_module.train_detector import (
     BUILTIN_AUGMENTATION,
@@ -500,14 +502,12 @@ def run_class_incremental(args: argparse.Namespace) -> dict:
         sparse_training_usage: dict[str, Any] | None = None
         if sparse_moe_enabled:
             training_model = getattr(model.trainer, "model", getattr(model, "model", None))
-            training_adapter = get_sparse_moe_adapter(training_model)
-            if training_adapter is not None:
-                sparse_training_usage = training_adapter.usage_tracker.state_dict()
+            sparse_training_usage = sparse_moe_usage_state(training_model)
+            if sparse_training_usage is None:
+                raise RuntimeError(f"第 {stage_number} 阶段训练完成但未找到 Sparse-MoE usage tracker")
         trained = YOLO(str(best_model))
-        if sparse_training_usage is not None:
-            trained_adapter = get_sparse_moe_adapter(trained.model)
-            if trained_adapter is not None:
-                trained_adapter.usage_tracker.load_state_dict(sparse_training_usage)
+        if sparse_moe_enabled and not restore_sparse_moe_usage(trained.model, sparse_training_usage):
+            raise RuntimeError(f"第 {stage_number} 阶段 best checkpoint 未恢复 Sparse-MoE usage tracker")
         validation_result = trained.val(
             data=str(data_yaml.resolve()),
             split="val",

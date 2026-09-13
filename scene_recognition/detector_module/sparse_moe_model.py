@@ -645,6 +645,120 @@ def get_sparse_moe_adapter(model: nn.Module) -> SparseMoEDetectAdapter | None:
     return None
 
 
+def _normalise_class_names(value: object) -> list[str]:
+    """Return class names from the list/dict forms used by YOLO checkpoints."""
+
+    if isinstance(value, dict):
+        names: list[str] = []
+        for index in range(len(value)):
+            if index in value:
+                item = value[index]
+            elif str(index) in value:
+                item = value[str(index)]
+            else:
+                return []
+            names.append(str(item))
+        return names
+    if isinstance(value, (list, tuple)):
+        return [str(item) for item in value]
+    return []
+
+
+def _iter_module_attribute(value: object) -> tuple[nn.Module, ...]:
+    """Safely iterate an optional Ultralytics head branch.
+
+    Ultralytics 8.4.x has optional ``one2one_cv3``/``cv3`` attributes.  Some
+    model variants install the attribute with ``None`` rather than omitting
+    it, while ``DetectionModel._remap_cls_by_names`` assumes it is iterable.
+    Keeping this guard local lets us load checkpoints without mutating the
+    live model or relying on that private, version-specific implementation.
+    """
+
+    if value is None:
+        return ()
+    if isinstance(value, (nn.ModuleList, nn.Sequential, list, tuple)):
+        return tuple(item for item in value if isinstance(item, nn.Module))
+    try:
+        return tuple(item for item in value if isinstance(item, nn.Module))  # type: ignore[union-attr]
+    except TypeError:
+        return ()
+
+
+def _classification_state_keys(model: nn.Module, state_dict: dict[str, torch.Tensor], class_count: int) -> set[str]:
+    """Find Detect class-logit tensors while tolerating optional ``None`` heads."""
+
+    keys: set[str] = set()
+    for module_name, module in model.named_modules():
+        for attribute in ("cv3", "one2one_cv3"):
+            branches = _iter_module_attribute(getattr(module, attribute, None))
+            for branch_index, branch in enumerate(branches):
+                layers = _iter_module_attribute(branch)
+                if not layers:
+                    continue
+                last = layers[-1]
+                if getattr(last, "out_channels", None) != class_count:
+                    continue
+                prefix = f"{module_name}.{attribute}.{branch_index}.{len(layers) - 1}"
+                for parameter_name in ("weight", "bias"):
+                    key = f"{prefix}.{parameter_name}"
+                    if key in state_dict:
+                        keys.add(key)
+    return keys
+
+
+def _source_key_aliases(key: str) -> tuple[str, ...]:
+    """Map plain Detect paths to the wrapped ``detect_head`` paths."""
+
+    candidates = [key]
+    parts = key.split(".")
+    if len(parts) >= 3 and parts[0] == "model" and parts[1].isdigit():
+        layer_prefix = ".".join(parts[:2])
+        suffix = ".".join(parts[2:])
+        candidates.append(f"{layer_prefix}.detect_head.{suffix}")
+    return tuple(candidates)
+
+
+def _remap_classification_rows(
+    aligned: dict[str, torch.Tensor],
+    source_by_target_key: dict[str, torch.Tensor],
+    target_state: dict[str, torch.Tensor],
+    source_model: nn.Module,
+    target_model: nn.Module,
+) -> int:
+    """Copy overlapping class rows by name and leave new rows initialized.
+
+    This is intentionally implemented here instead of calling Ultralytics'
+    private ``_remap_cls_by_names``.  The latter changed across releases and
+    8.4.100 iterates an optional head attribute whose value may be ``None``.
+    """
+
+    source_names = _normalise_class_names(getattr(source_model, "names", None))
+    target_names = _normalise_class_names(getattr(target_model, "names", None))
+    if not source_names or not target_names:
+        return 0
+    source_lookup = {name.strip().casefold(): index for index, name in enumerate(source_names)}
+    mapping = [source_lookup.get(name.strip().casefold(), -1) for name in target_names]
+    valid = [(target_index, source_index) for target_index, source_index in enumerate(mapping) if source_index >= 0]
+    if not valid:
+        return 0
+
+    remapped = 0
+    class_keys = _classification_state_keys(target_model, target_state, len(target_names))
+    for key in class_keys:
+        source_value = source_by_target_key.get(key)
+        target_value = target_state[key]
+        if source_value is None or source_value.ndim == 0:
+            continue
+        if source_value.shape[0] != len(source_names) or source_value.shape[1:] != target_value.shape[1:]:
+            continue
+        value = target_value.detach().clone()
+        for target_index, source_index in valid:
+            value[target_index] = source_value[source_index].to(device=value.device, dtype=value.dtype)
+        aligned[key] = value
+        remapped += 1
+    return remapped
+
+
 def load_sparse_weights(model: nn.Module, weights: object, verbose: bool = True) -> int:
     """Load plain or sparse Ultralytics weights into a freshly built sparse model."""
 
@@ -655,23 +769,26 @@ def load_sparse_weights(model: nn.Module, weights: object, verbose: bool = True)
         raise TypeError("weights must contain a torch.nn.Module")
     source_state = source_model.float().state_dict()
     target_state = model.state_dict()
-    aligned: dict[str, torch.Tensor] = {}
+    # Keep shape-mismatched class tensors available for the explicit row
+    # remapper below.  A four-class checkpoint cannot pass the ordinary
+    # ``shape ==`` intersection for a six-class student head.
+    source_by_target_key: dict[str, torch.Tensor] = {}
     for key, value in source_state.items():
-        candidates = [key]
-        marker = "."
-        parts = key.split(marker)
-        if len(parts) >= 3 and parts[0] == "model" and parts[1].isdigit():
-            layer_prefix = ".".join(parts[:2])
-            suffix = ".".join(parts[2:])
-            candidates.append(f"{layer_prefix}.detect_head.{suffix}")
-        for candidate in candidates:
-            if candidate in target_state and target_state[candidate].shape == value.shape:
-                aligned[candidate] = value
-                break
-
-    remap = getattr(model, "_remap_cls_by_names", None)
-    if callable(remap):
-        remap(aligned, source_model, verbose=verbose)
+        for candidate in _source_key_aliases(key):
+            if candidate in target_state:
+                source_by_target_key.setdefault(candidate, value)
+    aligned = {
+        key: value
+        for key, value in source_by_target_key.items()
+        if target_state[key].shape == value.shape
+    }
+    remapped = _remap_classification_rows(
+        aligned,
+        source_by_target_key,
+        target_state,
+        source_model,
+        model,
+    )
     model.load_state_dict(aligned, strict=False)
     source_adapter = get_sparse_moe_adapter(source_model)
     target_adapter = get_sparse_moe_adapter(model)
@@ -681,7 +798,7 @@ def load_sparse_weights(model: nn.Module, weights: object, verbose: bool = True)
         # stages while starting a fresh usage counter for the current stage.
         target_adapter.anchor_bank.load_state_dict(source_adapter.anchor_bank.state_dict())
     if verbose:
-        print(f"Transferred {len(aligned)}/{len(target_state)} items into Sparse-MoE model")
+        print(f"Transferred {len(aligned)}/{len(target_state)} items into Sparse-MoE model ({remapped} class tensors remapped)")
     return len(aligned)
 
 

@@ -25,6 +25,10 @@ COMMANDS: dict[str, tuple[str, ...]] = {
     "yolo": ("-m", "scene_recognition.detector_module.train_detector_ablation"),
     "continual-yolo": ("-m", "scene_recognition.detector_module.train_continual_yolo"),
     "class-il-yolo": ("-m", "scene_recognition.detector_module.train_class_incremental_yolo"),
+    "augment-yolo": ("-m", "scene_recognition.detector_module.augment_yolo_dataset"),
+    "prepare-batch-il": ("-m", "scene_recognition.detector_module.prepare_batch_incremental_dataset"),
+    "batch-il-yolo": ("-m", "scene_recognition.detector_module.train_batch_incremental_yolo"),
+    "four-to-six-yolo": ("-m", "scene_recognition.detector_module.run_four_to_six_pipeline"),
     "continual-evaluate": ("-m", "scene_recognition.detector_module.evaluate_continual"),
     "resnet-detector": ("-m", "scene_recognition.detector_module.resnet18_detector"),
     "detection-matrix": (
@@ -39,6 +43,9 @@ COMMANDS: dict[str, tuple[str, ...]] = {
     ),
     "ascend310b-train-aug": (
         str(ROOT / "deployment" / "ascend310b" / "train_with_augmentation.py"),
+    ),
+    "ascend310b-pipeline": (
+        str(ROOT / "deployment" / "ascend310b" / "run_end_to_end.py"),
     ),
     "ascend310b-probe-train": (
         str(ROOT / "deployment" / "ascend310b" / "probe_training_env.py"),
@@ -70,6 +77,10 @@ def usage() -> str:
         "  yolo                train one YOLOv8n detector",
         "  continual-yolo      fine-tune a local checkpoint on an incremental round",
         "  class-il-yolo       run six-stage ER or DER Class-IL training",
+        "  augment-yolo       build deterministic offline train-only YOLO augmentation",
+        "  prepare-batch-il   prepare arbitrary-batch four-to-six Class-IL views",
+        "  batch-il-yolo      run arbitrary-batch ER or DER Class-IL training",
+        "  four-to-six-yolo   orchestrate base augmentation/training and batch IL",
         "  continual-evaluate  report New-mAP, old-class mAP and KRR",
         "  resnet-detector     train one ResNet18-FPN detector",
         "  detection-matrix    run the final eight detection experiments",
@@ -77,6 +88,7 @@ def usage() -> str:
         "  ascend310b-package  build a portable Ascend 310B inference package",
         "  ascend310b-augment  build selected offline YOLO augmentation data",
         "  ascend310b-train-aug augment first, then train YOLO on the generated data",
+        "  ascend310b-pipeline  augment data, run an existing ONNX/OM model and save outputs",
         "  ascend310b-probe-train inspect board-side torch/ultralytics/NPU training environment",
         "  ascend310b-cascade  run six-class plus single-class expert NPU inference",
         "",

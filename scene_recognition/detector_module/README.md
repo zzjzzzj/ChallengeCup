@@ -221,3 +221,12 @@ python train.py class-il-yolo --help
 训练顺序为 `soldier → small_aircraft → warship → tank → patrol_boat → armored_vehicle`。
 初始 checkpoint 不能已经训练过这些项目类别。完整方法、隐私边界和四组对比命令见
 `docs/六阶段类增量学习-ER与DER.md`。
+
+## 四类到六类多批次小样本增量
+
+新流程使用独立的 `augment-yolo`、`prepare-batch-il`、`batch-il-yolo` 和
+`four-to-six-yolo` 命令。它以四类 checkpoint 为阶段 0，固定扩展为六类头，支持任意
+批次数、每批任意类别子集、缺类与跨批重复，并提供 ER、DER、200/500 replay buffer
+和可选 Sparse-MoE。离线增广只改 train，val/test 保持原图；每批 YAML 始终声明六类，
+未来类别标签不会泄漏。完整参数、batch plan、K-shot、隐私边界和 PowerShell 示例见
+`docs/四类到六类多批次小样本增量训练.md`。
