@@ -1,0 +1,30 @@
+{
+  "images": 1,
+  "total_detections": 1,
+  "class_counts": {
+    "warship": 1
+  },
+  "scene_counts": {
+    "sea": 1
+  },
+  "modality_counts": {
+    "ir": 1
+  },
+  "consistency_counts": {
+    "consistent": 1
+  },
+  "source_predictions": "outputs\\ascend310bpro_format_single_sample\\predictions.jsonl",
+  "source_summary": "",
+  "source_inference_summary": {},
+  "report_dir": "outputs\\ascend310bpro_format_single_sample\\agent_reports\\reports",
+  "batch_summary_csv": "outputs\\ascend310bpro_format_single_sample\\agent_reports\\batch_summary.csv",
+  "memory": {
+    "memory_path": "",
+    "recent_records": 0,
+    "recent_reports": 0,
+    "recent_feedback": 0,
+    "scene_counts": {},
+    "modality_counts": {},
+    "target_counts": {}
+  }
+}

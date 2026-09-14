@@ -14,4 +14,4 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 cd "${PROJECT_ROOT}"
 
 PYTHON_BIN="${PYTHON_BIN:-python3}"
-"${PYTHON_BIN}" "${SCRIPT_DIR}/routed_infer_npu.py" --config "${SCRIPT_DIR}/config.json" "$@"
+"${PYTHON_BIN}" "${SCRIPT_DIR}/infer_best_6class_npu.py" "$@"

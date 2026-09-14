@@ -1,0 +1,48 @@
+{
+  "images": 2,
+  "total_detections": 16,
+  "class_counts": {
+    "small_aircraft": 6,
+    "soldier": 10
+  },
+  "scene_counts": {
+    "air": 2
+  },
+  "modality_counts": {
+    "ir": 2
+  },
+  "consistency_counts": {
+    "invalid_combination": 2
+  },
+  "source_predictions": "deployment\\predictions.jsonl",
+  "source_summary": "deployment\\summary.json",
+  "source_inference_summary": {
+    "type": "list",
+    "items": 750,
+    "first_item_keys": [
+      "expert",
+      "final",
+      "image",
+      "main"
+    ]
+  },
+  "report_dir": "outputs\\ascend310bpro_format_smoke\\reports",
+  "batch_summary_csv": "outputs\\ascend310bpro_format_smoke\\batch_summary.csv",
+  "memory": {
+    "memory_path": "outputs\\ascend310bpro_format_smoke\\agent_memory.jsonl",
+    "recent_records": 2,
+    "recent_reports": 2,
+    "recent_feedback": 0,
+    "scene_counts": {
+      "air": 2
+    },
+    "modality_counts": {
+      "ir": 2
+    },
+    "target_counts": {
+      "small_aircraft": 6,
+      "soldier": 10
+    },
+    "usage": "反馈记录可作为后续增量训练的样本筛选和回放依据。"
+  }
+}

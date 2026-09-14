@@ -1,4 +1,4 @@
-# Ascend 310B Plus Routed Inference
+# Ascend 310B Plus Six-Class Inference
 
 This is a standalone board-side runtime project. It implements the routing
 logic from `ROUTING_LOGIC_DETAILED.md` without modifying the older
@@ -6,7 +6,38 @@ logic from `ROUTING_LOGIC_DETAILED.md` without modifying the older
 
 ## Model Layout
 
-Put the three exported ONNX or OM files here:
+For the current single six-class detector, put `best.onnx` here:
+
+```text
+deployment/ascend310bplus/models/best.onnx
+```
+
+If you keep it as `deployment/best.onnx`, the scripts will also find it
+automatically.
+
+Run it with:
+
+```bash
+bash deployment/ascend310bplus/run_best_6class_npu.sh \
+  --model deployment/ascend310bplus/models/best.onnx \
+  --input data/datasets_r1_base_train \
+  --classes deployment/ascend310bplus/classes_6.txt \
+  --soc-version Ascend310B4 \
+  --output-dir outputs/best_6class
+```
+
+The class order is fixed by `classes_6.txt`:
+
+```text
+soldier
+small_aircraft
+warship
+tank
+patrol_boat
+armored_vehicle
+```
+
+The older routed deployment still supports three exported ONNX or OM files:
 
 ```text
 models/
@@ -20,17 +51,18 @@ The default paths are configured as `models/...` in `config.json`; the runtime
 first checks paths relative to this folder and then the project root. You can
 also override model paths on the command line.
 
-Check paths before converting:
+Check the current single six-class model before converting:
 
 ```bash
 bash deployment/ascend310bplus/check_models.sh \
   --soc-version Ascend310B4
 ```
 
-If your filenames are different:
+For the older routed deployment, add `--routed`:
 
 ```bash
 bash deployment/ascend310bplus/check_models.sh \
+  --routed \
   --scene-model models/your_scene_router.onnx \
   --easy-model models/your_easy_detector.onnx \
   --hard-model models/your_hard_detector.onnx \
@@ -51,6 +83,75 @@ Check the environment:
 
 ```bash
 bash deployment/ascend310bplus/check_env.sh
+```
+
+## Full Pipeline From Raw Dataset
+
+The full board wrapper starts from a YOLO dataset, builds the deterministic
+offline augmentation, converts `best.onnx` to OM, then runs six-class
+detection:
+
+```bash
+cd ~/Desktop/workspace/ChallengeCup
+conda activate cc_env
+
+bash deployment/ascend310bplus/run_full_pipeline.sh \
+  --data data/datasets_r1_base_train \
+  --workspace outputs/ascend310bplus_full \
+  --soc-version Ascend310B4
+```
+
+`data/datasets_r1_base_train` can be a flat original dataset with images,
+matching YOLO `.txt` labels, and `classes.txt` in the same folder. It does not
+need to contain `data.yaml`; the wrapper generates one in the augmented output.
+The wrapper uses `deployment/ascend310bplus/classes_6.txt` by default so the
+generated dataset keeps the six-class protocol even if the source class file is
+stale or incomplete.
+
+The generated augmented dataset is:
+
+```text
+outputs/ascend310bplus_full/augmented_dataset/data.yaml
+```
+
+The inference outputs are:
+
+```text
+outputs/ascend310bplus_full/best_6class_infer/summary.json
+outputs/ascend310bplus_full/best_6class_infer/predictions.jsonl
+outputs/ascend310bplus_full/best_6class_infer/images/
+```
+
+If the augmented data already exists, reuse it:
+
+```bash
+bash deployment/ascend310bplus/run_full_pipeline.sh \
+  --data data/datasets_r1_base_train \
+  --workspace outputs/ascend310bplus_full \
+  --reuse-augmented \
+  --soc-version Ascend310B4
+```
+
+To regenerate the augmented dataset in the same workspace, move the old output
+aside and rebuild it at the same path:
+
+```bash
+bash deployment/ascend310bplus/run_full_pipeline.sh \
+  --data data/datasets_r1_base_train \
+  --workspace outputs/ascend310bplus_full \
+  --rebuild-augmented \
+  --soc-version Ascend310B4
+```
+
+If the filenames do not start with `ir_` or `sar_`, pass `--default-modality
+ir` or `--default-modality sar`. More details are in `PIPELINE.md`.
+
+To run only augmentation:
+
+```bash
+bash deployment/ascend310bplus/run_augment_yolo.sh \
+  --data data/datasets_r1_base_train \
+  --output outputs/ascend310bplus_full/augmented_dataset
 ```
 
 ## Optional Board-Side Class-IL Training
@@ -110,17 +211,19 @@ runs/class_il_sparse_moe_er_b500_e30_seed42/stage_06_armored_vehicle/weights/bes
 
 ## Convert ONNX To OM
 
-The inference script converts ONNX models automatically. To convert first:
+The inference script converts ONNX models automatically. To convert the
+current single six-class `best.onnx` first:
 
 ```bash
 bash deployment/ascend310bplus/convert_models.sh \
   --soc-version Ascend310B4
 ```
 
-Or with explicit paths:
+For the older routed deployment, add `--routed` and pass the three model paths:
 
 ```bash
 bash deployment/ascend310bplus/convert_models.sh \
+  --routed \
   --scene-model models/01_scene_router_224.onnx \
   --easy-model models/02_easy_detector_6class_640.onnx \
   --hard-model models/03_hard_detector_3class_960.onnx \
@@ -131,18 +234,22 @@ If the matching OM file already exists, it is reused. Pass `--force-convert` to
 rebuild. The generated names include input size and SOC, for example:
 
 ```text
-01_scene_router_224_224x224_Ascend310B4.om
-02_easy_detector_6class_640_640x640_Ascend310B4.om
-03_hard_detector_3class_960_960x960_Ascend310B4.om
+best_320x320_Ascend310B4.om
 ```
 
-## Run Routed Inference
+For `best.onnx`, the script auto-detects the static ONNX input size and passes
+that size to ATC. Use `--width` and `--height` only when you deliberately want
+to override it.
+
+## Run Best Six-Class Inference
 
 Run one image or a whole directory:
 
 ```bash
-bash deployment/ascend310bplus/run_routed_infer.sh \
+bash deployment/ascend310bplus/run_best_6class_npu.sh \
+  --model deployment/ascend310bplus/models/best.onnx \
   --input data/datasets_r1_base_train \
+  --classes deployment/ascend310bplus/classes_6.txt \
   --soc-version Ascend310B4 \
   --output-dir outputs/ascend310bplus
 ```
@@ -161,7 +268,18 @@ outputs/ascend310bplus/
   images/
 ```
 
-Each image is routed as follows:
+## Optional Routed Inference
+
+Use this only if you have the older scene/easy/hard model set:
+
+```bash
+bash deployment/ascend310bplus/run_routed_infer.sh \
+  --input data/datasets_r1_base_train \
+  --soc-version Ascend310B4 \
+  --output-dir outputs/ascend310bplus_routed
+```
+
+Each routed image is assigned as follows:
 
 ```text
 scene confidence < 0.60 -> hard detector
@@ -170,9 +288,9 @@ scene in forest/urban  -> hard detector
 ```
 
 Only one detector is executed per image.
-During normal inference, the easy/hard detector is converted and loaded only
-when at least one image is routed to that branch. `convert_models.sh` still
-converts all three models deliberately.
+During routed inference, the easy/hard detector is converted and loaded only
+when at least one image is routed to that branch. Use
+`convert_models.sh --routed` to convert all three models deliberately.
 
 ## Useful Overrides
 
@@ -220,19 +338,12 @@ If you only want JSON outputs:
 {
   "image": "...",
   "image_size": [640, 512],
-  "scene": {
-    "id": 1,
-    "name": "forest",
-    "confidence": 0.92,
-    "scores": [0.01, 0.92, 0.02, 0.05],
-    "elapsed_ms": 2.1
-  },
   "detector": {
-    "route": "hard",
-    "route_reason": "confident_hard_scene",
+    "route": "single",
+    "route_reason": "single_6class_best_model",
     "elapsed_ms": 58.3,
-    "input_size": [960, 960],
-    "output_count": 132300
+    "input_size": [320, 320],
+    "output_count": 1800
   },
   "detections": [
     {
@@ -240,7 +351,7 @@ If you only want JSON outputs:
       "score": 0.81,
       "class_id": 0,
       "class_name": "soldier",
-      "branch": "hard"
+      "branch": "single"
     }
   ]
 }

@@ -1,0 +1,6 @@
+soldier
+small_aircraft
+warship
+tank
+patrol_boat
+armored_vehicle

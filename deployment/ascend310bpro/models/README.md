@@ -7,10 +7,20 @@ here:
 best.onnx
 ```
 
-It is run with `deployment/ascend310bplus/run_best_6class_npu.sh` or with
-`run_full_pipeline.sh --single-model deployment/ascend310bplus/models/best.onnx`.
+It is run with `deployment/ascend310bpro/run_best_6class_npu.sh` or with
+`run_full_pipeline.sh --single-model deployment/ascend310bpro/models/best.onnx`.
 The scripts also auto-detect `deployment/best.onnx` if that is where the
 exported file is kept.
+
+For optional Class-IL incremental training, keep a trainable initial model here
+as well:
+
+```text
+yolo26n.pt
+```
+
+Use `.pt` or `.yaml` for training. Use `.onnx` and `.om` only for export and
+NPU inference.
 
 You may also place the three routed inference models in this directory:
 

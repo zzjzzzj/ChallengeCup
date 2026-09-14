@@ -1,0 +1,732 @@
+{
+  "image": "data/datasets_r1_base_train/ir_r1_base_air_000002.png",
+  "image_size": null,
+  "input_modalities": {
+    "ir": "data/datasets_r1_base_train/ir_r1_base_air_000002.png"
+  },
+  "modality": {
+    "label": "ir",
+    "confidence": 0.95,
+    "probabilities": {
+      "visible": 0.025,
+      "ir": 0.95,
+      "sar": 0.025
+    },
+    "source": "filename_rule",
+    "details": {
+      "tokens": [
+        "data",
+        "datasets",
+        "r1",
+        "base",
+        "train",
+        "ir",
+        "r1",
+        "base",
+        "air",
+        "000002",
+        "png"
+      ]
+    }
+  },
+  "scene": {
+    "label": "air",
+    "confidence": 0.9,
+    "probabilities": {
+      "air": 0.9,
+      "sea": 0.033333,
+      "urban": 0.033333,
+      "forest": 0.033333
+    },
+    "source": "filename_rule",
+    "details": {
+      "tokens": [
+        "data",
+        "datasets",
+        "r1",
+        "base",
+        "train",
+        "ir",
+        "r1",
+        "base",
+        "air",
+        "000002",
+        "png"
+      ]
+    }
+  },
+  "final_scene": {
+    "label": "air",
+    "confidence": 0.769387,
+    "probabilities": {
+      "air": 0.769387,
+      "sea": 0.024242,
+      "urban": 0.103185,
+      "forest": 0.103185
+    },
+    "source": "scene_target_consistency_fusion",
+    "details": {
+      "raw_scene": "air",
+      "target_vote": {
+        "air": 2.112305,
+        "sea": 0.0,
+        "urban": 1.17334,
+        "forest": 1.17334
+      },
+      "invalid_after_fusion": 3
+    }
+  },
+  "environment": {
+    "source": "prediction_metadata",
+    "noise_level": "unknown",
+    "clarity_level": "unknown",
+    "target_count": 6,
+    "route": "single"
+  },
+  "preprocessing": {
+    "augmentation_plan": {
+      "status": "offline_dataset_augmentation",
+      "note": "训练数据增广由 run_augment_yolo.sh / run_full_pipeline.sh 完成，推理阶段不改写原图。"
+    },
+    "aligned_modalities": {
+      "ir": "data/datasets_r1_base_train/ir_r1_base_air_000002.png"
+    }
+  },
+  "detections": [
+    {
+      "track_id": "det_0001",
+      "class_id": 1,
+      "class_name": "small_aircraft",
+      "label_cn": "小型飞机",
+      "confidence": 0.825195,
+      "bbox_xyxy": [
+        342.667,
+        117.5,
+        362.0,
+        129.167
+      ],
+      "bbox_xywh": [
+        342.667,
+        117.5,
+        19.333,
+        11.667
+      ],
+      "xyxy_norm": [
+        0.53541719,
+        0.22949219,
+        0.565625,
+        0.2522793
+      ],
+      "area": 225.558,
+      "source": "main_6class_960",
+      "branch": "final",
+      "notes": []
+    },
+    {
+      "track_id": "det_0002",
+      "class_id": 1,
+      "class_name": "small_aircraft",
+      "label_cn": "小型飞机",
+      "confidence": 0.803223,
+      "bbox_xyxy": [
+        266.167,
+        6.25,
+        284.167,
+        17.875
+      ],
+      "bbox_xywh": [
+        266.167,
+        6.25,
+        18.0,
+        11.625
+      ],
+      "xyxy_norm": [
+        0.41588594,
+        0.01220703,
+        0.44401094,
+        0.03491211
+      ],
+      "area": 209.25,
+      "source": "main_6class_960",
+      "branch": "final",
+      "notes": []
+    },
+    {
+      "track_id": "det_0003",
+      "class_id": 1,
+      "class_name": "small_aircraft",
+      "label_cn": "小型飞机",
+      "confidence": 0.483887,
+      "bbox_xyxy": [
+        310.333,
+        249.667,
+        329.667,
+        261.5
+      ],
+      "bbox_xywh": [
+        310.333,
+        249.667,
+        19.334,
+        11.833
+      ],
+      "xyxy_norm": [
+        0.48489531,
+        0.48763086,
+        0.51510469,
+        0.51074219
+      ],
+      "area": 228.779,
+      "source": "main_6class_960",
+      "branch": "final",
+      "notes": []
+    },
+    {
+      "track_id": "det_0004",
+      "class_id": 0,
+      "class_name": "soldier",
+      "label_cn": "士兵",
+      "confidence": 0.470215,
+      "bbox_xyxy": [
+        4.964,
+        30.643,
+        31.25,
+        30.643
+      ],
+      "bbox_xywh": [
+        4.964,
+        30.643,
+        26.286,
+        0.0
+      ],
+      "xyxy_norm": [
+        0.00775625,
+        0.05984961,
+        0.04882812,
+        0.05984961
+      ],
+      "area": 0.0,
+      "source": "fused",
+      "branch": "final",
+      "notes": [
+        "fused_from=1",
+        "sources=expert_soldier_1120x896"
+      ]
+    },
+    {
+      "track_id": "det_0005",
+      "class_id": 0,
+      "class_name": "soldier",
+      "label_cn": "士兵",
+      "confidence": 0.363525,
+      "bbox_xyxy": [
+        2.196,
+        39.143,
+        27.339,
+        39.143
+      ],
+      "bbox_xywh": [
+        2.196,
+        39.143,
+        25.143,
+        0.0
+      ],
+      "xyxy_norm": [
+        0.00343125,
+        0.07645117,
+        0.04271719,
+        0.07645117
+      ],
+      "area": 0.0,
+      "source": "fused",
+      "branch": "final",
+      "notes": [
+        "fused_from=1",
+        "sources=expert_soldier_1120x896"
+      ]
+    },
+    {
+      "track_id": "det_0006",
+      "class_id": 0,
+      "class_name": "soldier",
+      "label_cn": "士兵",
+      "confidence": 0.3396,
+      "bbox_xyxy": [
+        326.714,
+        29.429,
+        352.143,
+        29.429
+      ],
+      "bbox_xywh": [
+        326.714,
+        29.429,
+        25.429,
+        0.0
+      ],
+      "xyxy_norm": [
+        0.51049062,
+        0.05747852,
+        0.55022344,
+        0.05747852
+      ],
+      "area": 0.0,
+      "source": "fused",
+      "branch": "final",
+      "notes": [
+        "fused_from=1",
+        "sources=expert_soldier_1120x896"
+      ]
+    }
+  ],
+  "output_summary": {
+    "target_type_count": 2,
+    "target_total_count": 6,
+    "targets": [
+      {
+        "label": "small_aircraft",
+        "label_cn": "小型飞机",
+        "count": 3,
+        "max_confidence": 0.825195,
+        "mean_confidence": 0.704102,
+        "confidences": [
+          0.825195,
+          0.803223,
+          0.483887
+        ]
+      },
+      {
+        "label": "soldier",
+        "label_cn": "士兵",
+        "count": 3,
+        "max_confidence": 0.470215,
+        "mean_confidence": 0.391113,
+        "confidences": [
+          0.470215,
+          0.363525,
+          0.3396
+        ]
+      }
+    ],
+    "target_details": "小型飞机 3 个（置信度：0.83、0.80、0.48）；士兵 3 个（置信度：0.47、0.36、0.34）",
+    "max_confidence": 0.825195,
+    "mean_confidence": 0.547608,
+    "description": "图像模态：红外。图像场景分类：天空。检测到 6 个目标，包含 2 类：小型飞机 3 个（置信度：0.83、0.80、0.48）；士兵 3 个（置信度：0.47、0.36、0.34）。"
+  },
+  "consistency": {
+    "status": "invalid_combination",
+    "target_counts": {
+      "small_aircraft": 3,
+      "soldier": 3
+    },
+    "original_invalid_count": 3,
+    "final_invalid_count": 3,
+    "original_invalid": [
+      {
+        "track_id": "det_0004",
+        "scene": "air",
+        "scene_cn": "天空",
+        "target": "soldier",
+        "target_cn": "士兵",
+        "confidence": 0.470215,
+        "reason": "目标类别与当前场景先验不匹配"
+      },
+      {
+        "track_id": "det_0005",
+        "scene": "air",
+        "scene_cn": "天空",
+        "target": "soldier",
+        "target_cn": "士兵",
+        "confidence": 0.363525,
+        "reason": "目标类别与当前场景先验不匹配"
+      },
+      {
+        "track_id": "det_0006",
+        "scene": "air",
+        "scene_cn": "天空",
+        "target": "soldier",
+        "target_cn": "士兵",
+        "confidence": 0.3396,
+        "reason": "目标类别与当前场景先验不匹配"
+      }
+    ],
+    "final_invalid": [
+      {
+        "track_id": "det_0004",
+        "scene": "air",
+        "scene_cn": "天空",
+        "target": "soldier",
+        "target_cn": "士兵",
+        "confidence": 0.470215,
+        "reason": "目标类别与当前场景先验不匹配"
+      },
+      {
+        "track_id": "det_0005",
+        "scene": "air",
+        "scene_cn": "天空",
+        "target": "soldier",
+        "target_cn": "士兵",
+        "confidence": 0.363525,
+        "reason": "目标类别与当前场景先验不匹配"
+      },
+      {
+        "track_id": "det_0006",
+        "scene": "air",
+        "scene_cn": "天空",
+        "target": "soldier",
+        "target_cn": "士兵",
+        "confidence": 0.3396,
+        "reason": "目标类别与当前场景先验不匹配"
+      }
+    ],
+    "rule": "场景与目标类别按数据集真实组合做一致性检查；冲突会进入运行损失代理值。"
+  },
+  "decision": {
+    "detector_profile": "single_6class_air_focus",
+    "confidence_threshold": 0.3,
+    "priority_classes": [
+      "small_aircraft",
+      "soldier"
+    ],
+    "route": "single",
+    "route_reason": "single_6class_best_model",
+    "enhancement": "keep small high-contrast flying targets",
+    "expert_routing": {
+      "active_experts": [
+        "ir_small_aircraft_expert",
+        "ir_soldier_expert",
+        "cross_modal_adapter"
+      ],
+      "adapter": "cross_modal_adapter",
+      "note": "部署侧记录专家选择建议；实际 NPU 推理由当前 OM 模型完成。"
+    },
+    "model_management": {
+      "edge_target": "Ascend 310B / 310B4",
+      "preferred_export": "ONNX -> ATC -> OM",
+      "load_strategy": "优先复用同尺寸同 SOC 的 .om 缓存文件。"
+    },
+    "description": "图像模态：红外。图像场景分类：天空。检测到 6 个目标，包含 2 类：小型飞机 3 个（置信度：0.83、0.80、0.48）；士兵 3 个（置信度：0.47、0.36、0.34）。"
+  },
+  "losses": {
+    "type": "runtime_proxy",
+    "formula": "L = w_moti*L_moti + w_env*L_env + w_box*L_box + w_cls*L_cls + w_detail*L_detail + w_proto*L_proto",
+    "components": {
+      "L_moti": 0.05,
+      "L_env": 0.230613,
+      "L_box": 0.452392,
+      "L_cls": 0.452392,
+      "L_detail": 0.0,
+      "L_proto": 0.5
+    },
+    "weights": {
+      "modality": 0.3,
+      "scene": 0.6,
+      "box": 1.0,
+      "cls": 1.0,
+      "detail": 0.2,
+      "proto": 0.4
+    },
+    "total": 1.258152,
+    "note": "这是推理阶段的置信度/一致性代理损失；训练时仍以真实训练损失为准。"
+  },
+  "memory": {
+    "enabled": true,
+    "memory_path": "outputs\\ascend310bpro_format_smoke\\agent_memory.jsonl"
+  },
+  "warnings": [],
+  "stages": [
+    {
+      "name": "scene_classification",
+      "status": "inferred",
+      "seconds": 0.0,
+      "message": "filename_rule",
+      "details": {
+        "scene": "air",
+        "confidence": 0.9
+      }
+    },
+    {
+      "name": "target_detection",
+      "status": "ok",
+      "seconds": 0.0,
+      "message": "6 target boxes",
+      "details": {
+        "route": "single",
+        "input_size": null,
+        "output_count": null
+      }
+    },
+    {
+      "name": "scene_target_reasoning",
+      "status": "ok",
+      "seconds": 0.0,
+      "message": "scene-target consistency checked",
+      "details": {
+        "detection_count": 6
+      }
+    },
+    {
+      "name": "agent_report_formatting",
+      "status": "ok",
+      "seconds": 0.0,
+      "message": "Agent-compatible JSON and CSV output generated",
+      "details": {}
+    }
+  ],
+  "sparse_moe": {
+    "deployment_note": "若使用 class-il-yolo --sparse-moe 训练得到新 best.pt，请重新 export ONNX 后再由 ATC 转 OM。"
+  },
+  "source_prediction": {
+    "image": "data/datasets_r1_base_train/ir_r1_base_air_000002.png",
+    "main": {
+      "elapsed_ms": 73.979,
+      "detections": [
+        {
+          "class_id": 1,
+          "name": "small_aircraft",
+          "confidence": 0.825195,
+          "bbox_xyxy": [
+            342.667,
+            117.5,
+            362.0,
+            129.167
+          ],
+          "bbox_xywh": [
+            342.667,
+            117.5,
+            19.333,
+            11.667
+          ],
+          "source": "main_6class_960",
+          "notes": []
+        },
+        {
+          "class_id": 1,
+          "name": "small_aircraft",
+          "confidence": 0.803223,
+          "bbox_xyxy": [
+            266.167,
+            6.25,
+            284.167,
+            17.875
+          ],
+          "bbox_xywh": [
+            266.167,
+            6.25,
+            18.0,
+            11.625
+          ],
+          "source": "main_6class_960",
+          "notes": []
+        },
+        {
+          "class_id": 1,
+          "name": "small_aircraft",
+          "confidence": 0.483887,
+          "bbox_xyxy": [
+            310.333,
+            249.667,
+            329.667,
+            261.5
+          ],
+          "bbox_xywh": [
+            310.333,
+            249.667,
+            19.333,
+            11.833
+          ],
+          "source": "main_6class_960",
+          "notes": []
+        }
+      ]
+    },
+    "expert": {
+      "enabled": true,
+      "elapsed_ms": 70.556,
+      "detections": [
+        {
+          "class_id": 0,
+          "name": "soldier",
+          "confidence": 0.470215,
+          "bbox_xyxy": [
+            4.964,
+            30.643,
+            31.25,
+            30.643
+          ],
+          "bbox_xywh": [
+            4.964,
+            30.643,
+            26.286,
+            0.0
+          ],
+          "source": "expert_soldier_1120x896",
+          "notes": []
+        },
+        {
+          "class_id": 0,
+          "name": "soldier",
+          "confidence": 0.363525,
+          "bbox_xyxy": [
+            2.196,
+            39.143,
+            27.339,
+            39.143
+          ],
+          "bbox_xywh": [
+            2.196,
+            39.143,
+            25.143,
+            0.0
+          ],
+          "source": "expert_soldier_1120x896",
+          "notes": []
+        },
+        {
+          "class_id": 0,
+          "name": "soldier",
+          "confidence": 0.3396,
+          "bbox_xyxy": [
+            326.714,
+            29.429,
+            352.143,
+            29.429
+          ],
+          "bbox_xywh": [
+            326.714,
+            29.429,
+            25.429,
+            0.0
+          ],
+          "source": "expert_soldier_1120x896",
+          "notes": []
+        }
+      ]
+    },
+    "final": {
+      "detections": [
+        {
+          "class_id": 1,
+          "name": "small_aircraft",
+          "confidence": 0.825195,
+          "bbox_xyxy": [
+            342.667,
+            117.5,
+            362.0,
+            129.167
+          ],
+          "bbox_xywh": [
+            342.667,
+            117.5,
+            19.333,
+            11.667
+          ],
+          "source": "main_6class_960",
+          "notes": []
+        },
+        {
+          "class_id": 1,
+          "name": "small_aircraft",
+          "confidence": 0.803223,
+          "bbox_xyxy": [
+            266.167,
+            6.25,
+            284.167,
+            17.875
+          ],
+          "bbox_xywh": [
+            266.167,
+            6.25,
+            18.0,
+            11.625
+          ],
+          "source": "main_6class_960",
+          "notes": []
+        },
+        {
+          "class_id": 1,
+          "name": "small_aircraft",
+          "confidence": 0.483887,
+          "bbox_xyxy": [
+            310.333,
+            249.667,
+            329.667,
+            261.5
+          ],
+          "bbox_xywh": [
+            310.333,
+            249.667,
+            19.333,
+            11.833
+          ],
+          "source": "main_6class_960",
+          "notes": []
+        },
+        {
+          "class_id": 0,
+          "name": "soldier",
+          "confidence": 0.470215,
+          "bbox_xyxy": [
+            4.964,
+            30.643,
+            31.25,
+            30.643
+          ],
+          "bbox_xywh": [
+            4.964,
+            30.643,
+            26.286,
+            0.0
+          ],
+          "source": "fused",
+          "notes": [
+            "fused_from=1",
+            "sources=expert_soldier_1120x896"
+          ]
+        },
+        {
+          "class_id": 0,
+          "name": "soldier",
+          "confidence": 0.363525,
+          "bbox_xyxy": [
+            2.196,
+            39.143,
+            27.339,
+            39.143
+          ],
+          "bbox_xywh": [
+            2.196,
+            39.143,
+            25.143,
+            0.0
+          ],
+          "source": "fused",
+          "notes": [
+            "fused_from=1",
+            "sources=expert_soldier_1120x896"
+          ]
+        },
+        {
+          "class_id": 0,
+          "name": "soldier",
+          "confidence": 0.3396,
+          "bbox_xyxy": [
+            326.714,
+            29.429,
+            352.143,
+            29.429
+          ],
+          "bbox_xywh": [
+            326.714,
+            29.429,
+            25.429,
+            0.0
+          ],
+          "source": "fused",
+          "notes": [
+            "fused_from=1",
+            "sources=expert_soldier_1120x896"
+          ]
+        }
+      ]
+    }
+  }
+}

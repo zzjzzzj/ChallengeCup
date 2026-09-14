@@ -4,14 +4,14 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  bash deployment/ascend310bplus/run_class_il_training.sh [options]
+  bash deployment/ascend310bpro/run_class_il_training.sh [options]
 
 Common examples:
-  bash deployment/ascend310bplus/run_class_il_training.sh \
+  bash deployment/ascend310bpro/run_class_il_training.sh \
     --private-root "$HOME/Desktop/workspace/ChallengeCup/private_data" \
     --method both
 
-  bash deployment/ascend310bplus/run_class_il_training.sh \
+  bash deployment/ascend310bpro/run_class_il_training.sh \
     --data /path/to/yolo_r1_r2inc_augmented_full_tvt_seed42 \
     --prepared /path/to/class_il_prepared_sparse_moe_seed42 \
     --initial-model /path/to/yolo26n.pt \
@@ -95,7 +95,7 @@ resolve_model_file() {
     "${SCRIPT_DIR}/models/${value}" \
     "${PROJECT_ROOT}/models/${value}" \
     "${PROJECT_ROOT}/deployment/${value}" \
-    "${PROJECT_ROOT}/deployment/ascend310bplus/models/${value}"; do
+    "${PROJECT_ROOT}/deployment/ascend310bpro/models/${value}"; do
     if [[ -f "${candidate}" ]]; then
       printf '%s\n' "${candidate}"
       return 0

@@ -29,7 +29,7 @@ Usage:
 
 Default mode checks the current single six-class detector. The script checks,
 in order:
-  deployment/ascend310bplus/models/best.onnx
+  deployment/ascend310bpro/models/best.onnx
   deployment/best.onnx
   models/best.onnx
 
