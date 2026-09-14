@@ -995,6 +995,14 @@ def summarize_rows(rows: Sequence[Dict[str, Any]], model_paths: Dict[str, str], 
         key: (sum(values) / len(values) if values else 0.0)
         for key, values in detector_times.items()
     }
+    detector_count = sum(len(values) for values in detector_times.values())
+    weighted_detector = (
+        sum(sum(values) for values in detector_times.values()) / detector_count
+        if detector_count
+        else 0.0
+    )
+    avg_end_to_end = avg_scene + weighted_detector
+    fps = 1000.0 / avg_end_to_end if avg_end_to_end > 0 else None
     return {
         "images": len(rows),
         "total_detections": total_detections,
@@ -1003,6 +1011,9 @@ def summarize_rows(rows: Sequence[Dict[str, Any]], model_paths: Dict[str, str], 
         "class_counts": dict(sorted(class_counts.items())),
         "avg_scene_ms": round(avg_scene, 3),
         "avg_detector_ms": {key: round(value, 3) for key, value in avg_detector.items()},
+        "avg_end_to_end_ms": round(avg_end_to_end, 3),
+        "fps": round(fps, 3) if fps is not None else None,
+        "fps_definition": "routed per-image inference FPS = 1000 / (average scene-router time + route-weighted detector time); excludes image decode, preprocessing, postprocessing, and file I/O.",
         "models": model_paths,
         "route_confidence": float(config.get("route_confidence", 0.60)),
         "uncertain_route": str(config.get("uncertain_route", "hard")),

@@ -200,3 +200,29 @@ bash deployment/ascend310bpro/run_full_pipeline.sh \
 
 This works for current single-model predictions, older routed predictions, and
 the earlier main/expert/final cascade JSONL.
+
+## Stage 6: Test-Protocol Metrics
+
+After board inference, run `run_evaluate_tzb.sh` with a fixed base test set,
+fixed incremental test set, and three prediction files: before-increment on
+the base set, after-increment on the base set, and after-increment on the new
+set.  The evaluator computes base mAP, old-class KRR, new-class New-mAP, and
+reads FPS from the inference `summary.json`.  It writes both a machine-readable
+JSON report and a four-row CSV scorecard.
+
+```bash
+bash deployment/ascend310bpro/run_evaluate_tzb.sh \
+  --base-data data/base_test \
+  --new-data data/incremental_test \
+  --before-predictions outputs/before/predictions.jsonl \
+  --after-base-predictions outputs/after_base/predictions.jsonl \
+  --after-new-predictions outputs/after_new/predictions.jsonl \
+  --fps-summary outputs/after_new/summary.json \
+  --output outputs/ascend310bpro_tzb_metrics/metrics.json
+```
+
+The base set must be identical for the before/after runs. The evaluator uses
+COCO-style 101-point AP at IoU 0.50 and the mean over IoU 0.50:0.95. KRR is
+`old-mAP-after / old-mAP-before`; New-mAP is computed only over the new class
+IDs. Missing labels, missing class support, or missing FPS evidence prevent
+`evaluation_ready=true`.

@@ -223,3 +223,36 @@ bash deployment/ascend310bpro/run_full_pipeline.sh \
 
 Use it only when the three routed models are the desired strategy. The current
 default is the single six-class `best.onnx`.
+
+## Required Test Indicators
+
+The board submission protocol is implemented by `evaluate_tzb.py` and uses
+the same fixed test images and NPU prediction JSONL files that were actually
+run on Ascend 310B:
+
+```text
+base test + before model -> base mAP
+base test + after model  -> after-base mAP
+base before/after mAP    -> KRR = after old-class mAP / before old-class mAP
+new test + after model   -> New-mAP (new classes only)
+inference summary.json   -> FPS
+```
+
+Run it after collecting the three prediction files:
+
+```bash
+bash deployment/ascend310bpro/run_evaluate_tzb.sh \
+  --base-data data/base_test \
+  --new-data data/incremental_test \
+  --before-predictions outputs/before/predictions.jsonl \
+  --after-base-predictions outputs/after_base/predictions.jsonl \
+  --after-new-predictions outputs/after_new/predictions.jsonl \
+  --fps-summary outputs/after_new/summary.json \
+  --output outputs/ascend310bpro_tzb_metrics/metrics.json
+```
+
+The CSV scorecard contains exactly `mAP@0.5`, `KRR`, `New-mAP`, and `FPS`; the
+JSON also preserves `mAP-before` and `mAP-after` for auditability.  `summary.json` now records the measured FPS and its scope.  The
+evaluator refuses to mark the report ready when a class has no ground-truth
+support or FPS evidence is missing; it never substitutes training accuracy for
+the required test metrics.
