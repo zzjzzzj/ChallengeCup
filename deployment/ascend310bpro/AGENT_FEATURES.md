@@ -17,6 +17,7 @@ This file records what was compared from `Agent/` and how the board-side
 | Model decision explanation | `Agent/reasoning.py build_decision` | `decision` field records route, confidence threshold, priority classes, and OM cache strategy. |
 | Loss formula helper | `Agent/cli.py loss` | `agent_outputs.py loss` computes the same combined training-loss formula. |
 | Training bridge | `Agent/cli.py` train bridges | Existing `run_class_il_training.sh` and `run_full_pipeline.sh --train` are kept and path-parameterized. |
+| Competition result folder | requirement screenshot / `evaluate_tzb.py` mention | `run_tzb_submission.sh` packages mAP/KRR/New-mAP and NPU FPS evidence. |
 
 ## Kept From `ascend310bplus`
 
@@ -61,6 +62,9 @@ After `run_full_pipeline.sh`, the pro package produces:
 <workspace>/agent_reports/batch_summary.csv
 <workspace>/agent_reports/agent_summary.json
 <workspace>/agent_memory.jsonl
+<workspace>/tzb_submission/tzb_metrics.json
+<workspace>/tzb_submission/tzb_metrics.csv
+<workspace>/tzb_submission/npu_fps_summary.json
 ```
 
 Each per-image report contains:

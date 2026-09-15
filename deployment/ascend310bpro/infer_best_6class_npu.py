@@ -28,6 +28,7 @@ from routed_infer_npu import (
     Detection,
     PROJECT_ROOT,
     SCRIPT_DIR,
+    decode_hard_output,
     decode_easy_output,
     iter_images,
     prepare_detector_tensor,
@@ -290,17 +291,35 @@ def run_single_image(
     elapsed_ms = (time.perf_counter() - started) * 1000.0
     if not outputs:
         raise RuntimeError("model produced no outputs: %s" % model_path)
-    detections = decode_easy_output(
-        outputs[0],
-        class_names,
-        transform,
-        args.confidence,
-        args.nms_format,
-        args.coords,
-        args.min_box_size,
-        args.apply_nms,
-        args.iou,
-    )
+
+    if args.decode_mode == "raw":
+        class_id_remap = {index: index for index in range(len(class_names))}
+        detections = decode_hard_output(
+            outputs[0],
+            class_names,
+            class_names,
+            class_id_remap,
+            transform,
+            args.confidence,
+            args.iou,
+            args.raw_layout,
+            args.coords,
+            args.raw_box_format,
+            args.raw_score_activation,
+            args.min_box_size,
+        )
+    else:
+        detections = decode_easy_output(
+            outputs[0],
+            class_names,
+            transform,
+            args.confidence,
+            args.nms_format,
+            args.coords,
+            args.min_box_size,
+            args.apply_nms,
+            args.iou,
+        )
     for detection in detections:
         detection.branch = "single"
     return {
@@ -308,9 +327,10 @@ def run_single_image(
         "image_size": image_size,
         "detector": {
             "route": "single",
-            "route_reason": "single_6class_best_model",
+            "route_reason": "single_detector_model",
             "elapsed_ms": round(elapsed_ms, 3),
             "input_size": [args.width, args.height],
+            "decode_mode": args.decode_mode,
             "output_count": int(outputs[0].size),
         },
         "detections": [detection.to_dict() for detection in detections],
@@ -339,6 +359,10 @@ def summarize_rows(rows: Sequence[Dict[str, Any]], model_path: Path, class_names
         "confidence": float(args.confidence),
         "iou": float(args.iou),
         "input_size": [int(args.width), int(args.height)],
+        "decode_mode": args.decode_mode,
+        "raw_layout": args.raw_layout if args.decode_mode == "raw" else None,
+        "raw_box_format": args.raw_box_format if args.decode_mode == "raw" else None,
+        "raw_score_activation": args.raw_score_activation if args.decode_mode == "raw" else None,
     }
 
 
@@ -365,6 +389,15 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument("--iou", type=float, default=0.55)
     parser.add_argument("--min-box-size", type=float, default=1.0)
     parser.add_argument("--nms-format", default="xyxy-conf-class")
+    parser.add_argument(
+        "--decode-mode",
+        choices=["nms", "raw"],
+        default="nms",
+        help="nms decodes compact [x1,y1,x2,y2,conf,class] output; raw decodes plain YOLO [4+nc,anchors] output.",
+    )
+    parser.add_argument("--raw-layout", choices=["channels-first", "channels-last"], default="channels-first")
+    parser.add_argument("--raw-box-format", choices=["xywh", "xyxy"], default="xywh")
+    parser.add_argument("--raw-score-activation", choices=["auto", "sigmoid", "raw"], default="auto")
     parser.add_argument("--coords", choices=["letterbox", "original"], default="letterbox")
     parser.add_argument("--apply-nms", action="store_true", help="Apply class-wise NMS to compact outputs.")
     parser.add_argument("--output-dtype", choices=["float16", "float32"], default="float32")

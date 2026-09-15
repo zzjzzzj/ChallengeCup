@@ -1,0 +1,4 @@
+soldier
+small_aircraft
+warship
+tank

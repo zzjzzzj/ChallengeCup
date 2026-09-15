@@ -13,6 +13,7 @@ from Agent.continual.anchors.torch_expert_anchor import TorchExpertAnchorBank
 from Agent.models.aux_heads.heads import masked_auxiliary_loss
 from Agent.models.experts.sparse_adapter import SparseExpertAdapterBank
 from Agent.models.experts.torch_router import TorchExpertRoute, TorchExpertUsageTracker, TorchSparseExpertRouter
+from scene_recognition.detector_module.loss_item_utils import loss_items_to_vector, loss_value_to_scalar
 
 try:  # Keep data/protocol imports usable without the optional YOLO package.
     from ultralytics.nn.modules import Detect as _UltralyticsDetect
@@ -606,6 +607,8 @@ if _UltralyticsDetectionModel is not None:
             if preds is None:
                 preds = self.forward(batch["img"])
             regular_loss, regular_items = super().loss(batch, preds)
+            regular_loss = loss_value_to_scalar(regular_loss, batch["img"])
+            regular_items = loss_items_to_vector(regular_items, regular_loss, expected_length=3)
             components = self.sparse_moe.loss_components(batch)
             values = torch.stack(
                 [
@@ -617,9 +620,7 @@ if _UltralyticsDetectionModel is not None:
                 ]
             )
             batch_size = batch["img"].shape[0]
-            return torch.cat([regular_loss.reshape(-1), values * batch_size]), torch.cat(
-                [regular_items.reshape(-1), values.detach()]
-            )
+            return regular_loss + (values.sum() * batch_size), torch.cat([regular_items, values.detach()])
 
 
 else:  # pragma: no cover - only used when Ultralytics is not installed

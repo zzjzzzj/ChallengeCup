@@ -1,0 +1,34 @@
+{
+  "source_images": 750,
+  "source_images_dir": "D:\\000zzjCodes\\NCEPUWorkspace\\TiaoZhanBeiWorkspace\\ChallengeCup\\data\\datasets_r1_base_train",
+  "source_labels_dir": "D:\\000zzjCodes\\NCEPUWorkspace\\TiaoZhanBeiWorkspace\\ChallengeCup\\data\\datasets_r1_base_train",
+  "source_by_modality": {
+    "ir": 540,
+    "sar": 210
+  },
+  "include_original": true,
+  "augmentations_per_source": 3,
+  "generated_augmentation_images": 2250,
+  "output_images": 3000,
+  "output_images_dir": "D:\\000zzjCodes\\NCEPUWorkspace\\TiaoZhanBeiWorkspace\\ChallengeCup\\outputs\\ascend310bpro_before_pc\\base_before_augmented\\images",
+  "output_labels_dir": "D:\\000zzjCodes\\NCEPUWorkspace\\TiaoZhanBeiWorkspace\\ChallengeCup\\outputs\\ascend310bpro_before_pc\\base_before_augmented\\labels",
+  "operation_counts": {
+    "ir/invert_255": 540,
+    "ir/ir_gamma_bright": 540,
+    "ir/rot180": 540,
+    "sar/rot180": 210,
+    "sar/sar_gamma": 210,
+    "sar/sar_rot90_cw": 210
+  },
+  "validation": "all output images are readable, image/label pairs match, and YOLO labels are valid",
+  "data_yaml": "D:\\000zzjCodes\\NCEPUWorkspace\\TiaoZhanBeiWorkspace\\ChallengeCup\\outputs\\ascend310bpro_before_pc\\base_before_augmented\\data.yaml",
+  "class_names": [
+    "soldier",
+    "small_aircraft",
+    "warship",
+    "tank"
+  ],
+  "class_source": "D:\\000zzjCodes\\NCEPUWorkspace\\TiaoZhanBeiWorkspace\\ChallengeCup\\data\\datasets_r1_base_train\\classes.txt",
+  "validation_images": "D:\\000zzjCodes\\NCEPUWorkspace\\TiaoZhanBeiWorkspace\\ChallengeCup\\outputs\\ascend310bpro_before_pc\\base_before_augmented\\images",
+  "validation_policy": "train_as_val"
+}

@@ -1,0 +1,9 @@
+path: 'D:/000zzjCodes/NCEPUWorkspace/TiaoZhanBeiWorkspace/ChallengeCup/outputs/ascend310bpro_before_pc/base_before_augmented'
+train: 'images'
+val: 'images'
+nc: 4
+names:
+  0: 'soldier'
+  1: 'small_aircraft'
+  2: 'warship'
+  3: 'tank'

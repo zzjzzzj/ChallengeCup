@@ -1,0 +1,18 @@
+{
+  "available": false,
+  "reason": "unrecognized npu summary format",
+  "summary_keys": [
+    "batch_summary_csv",
+    "class_counts",
+    "consistency_counts",
+    "images",
+    "memory",
+    "modality_counts",
+    "report_dir",
+    "scene_counts",
+    "source_inference_summary",
+    "source_predictions",
+    "source_summary",
+    "total_detections"
+  ]
+}

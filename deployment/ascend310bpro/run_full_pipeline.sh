@@ -22,8 +22,8 @@ Common options:
   --classes PATH               Six-class names file. Default: deployment/ascend310bpro/classes_6.txt.
   --augmented-data PATH        Augmented dataset output. Default: <workspace>/augmented_dataset.
   --infer-input PATH           Image/directory/dataset to infer. Default: augmented dataset.
-  --output-dir PATH            Inference output. Default: <workspace>/best_6class_infer,
-                               or <workspace>/routed_infer with --routed.
+  --output-dir PATH            Inference output. Default: <workspace>/routed_infer,
+                               or <workspace>/best_6class_infer with --single-model.
   --report-dir PATH            Agent report output. Default: <workspace>/agent_reports.
   --predictions PATH           Existing predictions.jsonl for --report-only.
   --memory PATH                Agent memory JSONL. Default: <workspace>/agent_memory.jsonl.
@@ -65,12 +65,11 @@ Optional board-side training:
   --skip-class-il-prepare      Reuse existing prepared Class-IL directory.
 
 Model/path overrides:
-  --single-model PATH, --best-model PATH
+  --single, --single-model PATH, --best-model PATH
                                Use one compact six-class detector such as best.onnx.
-                               Default: first existing best.onnx under
-                               ascend310bpro/models, deployment, then
-                               project-root models.
-  --routed                     Use the older scene/easy/hard routed deployment instead.
+                               --single uses the first existing best.onnx under
+                               ascend310bpro/models, deployment, then project-root models.
+  --routed                     Use the report-aligned scene/easy/hard routed deployment.
   --single-width N             Single detector input width. Default: auto-detect from ONNX.
   --single-height N            Single detector input height. Default: auto-detect from ONNX.
   --confidence X, --det-conf X Detection confidence for single mode; routed mode passes --det-conf.
@@ -202,8 +201,8 @@ TRAIN_WORKERS=0
 TRAIN_EPOCHS=30
 SKIP_CLASS_IL_PREPARE=0
 
-CONFIG_PATH="${SCRIPT_DIR}/config.json"
-SINGLE_MODEL="$(default_best_model_path)"
+CONFIG_PATH="${SCRIPT_DIR}/route_config.yaml"
+SINGLE_MODEL=""
 SINGLE_WIDTH=""
 SINGLE_HEIGHT=""
 SINGLE_APPLY_NMS=0
@@ -412,6 +411,10 @@ while [[ $# -gt 0 ]]; do
     --single-model|--best-model)
       SINGLE_MODEL="${2:?missing value for $1}"
       shift 2
+      ;;
+    --single)
+      SINGLE_MODEL="$(default_best_model_path)"
+      shift
       ;;
     --routed)
       SINGLE_MODEL=""

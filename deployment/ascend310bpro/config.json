@@ -15,7 +15,7 @@
     "input_size": [224, 224],
     "classes": ["air", "forest", "sea", "urban"],
     "easy_scenes": ["air", "sea"],
-    "preprocess": "resize",
+    "preprocess": "short_center_crop",
     "score_mode": "auto",
     "output_dtype": "float32"
   },

@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
+import yaml
 from PIL import Image, ImageDraw
 
 
@@ -33,7 +34,7 @@ ACL_MEMCPY_DEVICE_TO_HOST = 2
 IMAGE_EXTENSIONS = {".bmp", ".jpeg", ".jpg", ".png", ".tif", ".tiff"}
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parents[1]
-DEFAULT_CONFIG = SCRIPT_DIR / "config.json"
+DEFAULT_CONFIG = SCRIPT_DIR / "route_config.yaml"
 
 
 @dataclass
@@ -282,8 +283,18 @@ class AscendOmModel:
             raise AclError("%s failed with ret=%s" % (action, ret))
 
 
+def load_config(path: Path) -> Dict[str, Any]:
+    if path.suffix.lower() in {".yaml", ".yml"}:
+        loaded = yaml.safe_load(path.read_text(encoding="utf-8-sig"))
+    else:
+        loaded = json.loads(path.read_text(encoding="utf-8-sig"))
+    if not isinstance(loaded, dict):
+        raise ValueError("config must be a mapping: %s" % path)
+    return loaded
+
+
 def load_json(path: Path) -> Dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
+    return load_config(path)
 
 
 def deep_update(base: Dict[str, Any], updates: Dict[str, Any]) -> Dict[str, Any]:
@@ -529,10 +540,24 @@ def raise_missing_models(inspections: Sequence[Dict[str, Any]]) -> None:
     raise FileNotFoundError("\n".join(lines))
 
 
+def resize_short_side_center_crop(image: Image.Image, width: int, height: int) -> Image.Image:
+    rgb = image.convert("RGB")
+    original_width, original_height = rgb.size
+    scale = max(float(width) / float(original_width), float(height) / float(original_height))
+    resized_width = max(width, int(round(original_width * scale)))
+    resized_height = max(height, int(round(original_height * scale)))
+    resized = rgb.resize((resized_width, resized_height), Image.BILINEAR)
+    left = max(0, (resized_width - width) // 2)
+    top = max(0, (resized_height - height) // 2)
+    return resized.crop((left, top, left + width, top + height))
+
+
 def prepare_scene_tensor(image: Image.Image, width: int, height: int, mode: str) -> np.ndarray:
     rgb = image.convert("RGB")
     if mode == "resize":
         prepared = rgb.resize((width, height), Image.BILINEAR)
+    elif mode in {"short_center_crop", "short-center-crop", "center_crop", "center-crop"}:
+        prepared = resize_short_side_center_crop(rgb, width, height)
     elif mode == "letterbox":
         prepared = letterbox_image(rgb, width, height)[0]
     else:

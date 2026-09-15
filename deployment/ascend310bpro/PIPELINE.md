@@ -10,6 +10,7 @@ original YOLO dataset
   -> ONNX to OM conversion
   -> Ascend 310B NPU inference
   -> Agent-style report outputs
+  -> TZB test-result folder packaging
 ```
 
 ## Stage 1: Dataset Augmentation
@@ -200,3 +201,66 @@ bash deployment/ascend310bpro/run_full_pipeline.sh \
 
 This works for current single-model predictions, older routed predictions, and
 the earlier main/expert/final cascade JSONL.
+
+## Stage 6: TZB Result Packaging
+
+Script:
+
+```bash
+bash deployment/ascend310bpro/run_tzb_submission.sh
+```
+
+It prepares the folder requested by the testing rules:
+
+```text
+tzb_metrics.json
+tzb_metrics.csv
+npu_fps_summary.json
+agent_summary.json
+README.md
+```
+
+With before/after `.pt` checkpoints and fixed test YAML files, it evaluates:
+
+```text
+base test set      -> before mAP, after mAP, KRR
+increment test set -> after-model New-mAP
+NPU summary        -> FPS
+```
+
+If the official `evaluate_tzb.py` is run separately, call it with `--skip-map`
+to package only FPS and report evidence:
+
+```bash
+bash deployment/ascend310bpro/run_tzb_submission.sh \
+  --skip-map \
+  --npu-summary outputs/ascend310bpro_full/best_6class_infer/summary.json \
+  --agent-summary outputs/ascend310bpro_full/agent_reports/agent_summary.json \
+  --output-dir outputs/ascend310bpro_full/tzb_submission
+```
+
+## Competition Before/After Flow
+
+Use this flow when the test rule asks for an increment-before model and an
+increment-after model:
+
+```text
+PC:
+  train_before_model_pc.ps1
+    data/datasets_r1_base_train -> before 4-class best.pt + before ONNX
+
+Board:
+  run_increment_from_before.sh
+    before 4-class best.pt + labeled six-class increment data -> after best.pt + after ONNX
+
+Board:
+  run_tzb_board_tests.sh
+    before ONNX on data/testdata/base_test_r1
+    after ONNX  on data/testdata/base_test_r1
+    after ONNX  on data/testdata/inc_test_r2
+```
+
+`data/testdata` currently contains image folders only. It is suitable for NPU
+prediction/FPS evidence, but it cannot be used by local PyTorch evaluation to
+compute mAP/KRR/New-mAP unless labels or the official `evaluate_tzb.py` are
+provided.
