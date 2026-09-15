@@ -9,7 +9,7 @@ Usage:
     --increment-data /path/to/increment_test_data.yaml \
     --before-model /path/to/increment_before.pt \
     --after-model /path/to/increment_after.pt \
-    --npu-summary outputs/ascend310bpro_full/best_6class_infer/summary.json \
+    --npu-summary outputs/ascend310bpro_full/routed_infer/summary.json \
     --agent-summary outputs/ascend310bpro_full/agent_reports/agent_summary.json \
     --output-dir outputs/ascend310bpro_full/tzb_submission \
     --device cpu

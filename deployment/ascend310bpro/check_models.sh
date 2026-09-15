@@ -24,22 +24,35 @@ default_best_model_path() {
 usage() {
   cat <<'EOF'
 Usage:
-  check_models.sh [--model PATH] [--classes PATH]
-  check_models.sh --routed [routed model args]
+  check_models.sh [routed model args]
+  check_models.sh --single [--model PATH] [--classes PATH]
 
-Default mode checks the current single six-class detector. The script checks,
-in order:
+Default mode checks the report-aligned routed deployment and verifies the
+model manifest when it exists.
+
+Use --single for the compact six-class detector. In single mode the script
+checks, in order:
   deployment/ascend310bpro/models/best.onnx
   deployment/best.onnx
   models/best.onnx
 
 Options:
+  --config PATH
+      Routed YAML/JSON config. Default: deployment/ascend310bpro/route_config.yaml.
+  --manifest PATH
+      Manifest path. Default: deployment/ascend310bpro/model_manifest.json.
+  --skip-manifest
+      Do not verify the manifest.
+  --write-manifest
+      Rebuild the manifest after checking configured model paths.
+  --single
+      Check the auto-detected best.onnx single-detector baseline.
   --model PATH, --single-model PATH, --best-model PATH
-      Single six-class ONNX/OM model. Default: auto-detected best.onnx.
+      Single six-class ONNX/OM model. Implies --single.
   --classes PATH
       Six-class names file. Default: classes_6.txt.
   --routed
-      Check the older scene/easy/hard routed deployment from config.json.
+      Explicitly check the scene/easy/hard routed deployment.
   -h, --help
       Show this help.
 EOF
@@ -64,9 +77,15 @@ resolve_existing_path() {
   return 1
 }
 
-MODE="single"
-MODEL_PATH="$(default_best_model_path)"
+MODE="routed"
+CONFIG_PATH="${SCRIPT_DIR}/route_config.yaml"
+MANIFEST_PATH="${SCRIPT_DIR}/model_manifest.json"
+SKIP_MANIFEST=0
+WRITE_MANIFEST=0
+MODEL_PATH=""
 CLASSES_PATH="${SCRIPT_DIR}/classes_6.txt"
+SOC_VERSION_VALUE="${SOC_VERSION:-}"
+OM_CACHE_DIR=""
 ROUTED_ARGS=()
 
 while [[ $# -gt 0 ]]; do
@@ -75,7 +94,39 @@ while [[ $# -gt 0 ]]; do
       MODE="routed"
       shift
       ;;
+    --single)
+      MODE="single"
+      MODEL_PATH="$(default_best_model_path)"
+      shift
+      ;;
+    --config)
+      CONFIG_PATH="${2:?missing value for $1}"
+      shift 2
+      ;;
+    --manifest)
+      MANIFEST_PATH="${2:?missing value for $1}"
+      shift 2
+      ;;
+    --skip-manifest)
+      SKIP_MANIFEST=1
+      shift
+      ;;
+    --write-manifest)
+      WRITE_MANIFEST=1
+      shift
+      ;;
+    --soc-version)
+      SOC_VERSION_VALUE="${2:?missing value for $1}"
+      ROUTED_ARGS+=("$1" "$2")
+      shift 2
+      ;;
+    --om-cache-dir)
+      OM_CACHE_DIR="${2:?missing value for $1}"
+      ROUTED_ARGS+=("$1" "$2")
+      shift 2
+      ;;
     --model|--single-model|--best-model)
+      MODE="single"
       MODEL_PATH="${2:?missing value for $1}"
       shift 2
       ;;
@@ -96,12 +147,37 @@ done
 
 if [[ "${MODE}" == "routed" ]]; then
   "${PYTHON_BIN}" "${SCRIPT_DIR}/routed_infer_npu.py" \
-    --config "${SCRIPT_DIR}/config.json" \
+    --config "${CONFIG_PATH}" \
     --check-models \
     "${ROUTED_ARGS[@]}"
+  if [[ "${WRITE_MANIFEST}" -eq 1 ]]; then
+    manifest_cmd=(
+      "${PYTHON_BIN}" "${SCRIPT_DIR}/model_manifest.py" build
+      --config "${CONFIG_PATH}"
+      --output "${MANIFEST_PATH}"
+    )
+    if [[ -n "${SOC_VERSION_VALUE}" ]]; then
+      manifest_cmd+=(--soc-version "${SOC_VERSION_VALUE}")
+    fi
+    if [[ -n "${OM_CACHE_DIR}" ]]; then
+      manifest_cmd+=(--om-cache-dir "${OM_CACHE_DIR}")
+    fi
+    "${manifest_cmd[@]}"
+  elif [[ "${SKIP_MANIFEST}" -eq 0 && -f "${MANIFEST_PATH}" ]]; then
+    manifest_cmd=(
+      "${PYTHON_BIN}" "${SCRIPT_DIR}/model_manifest.py" verify
+      --config "${CONFIG_PATH}"
+      --manifest "${MANIFEST_PATH}"
+    )
+    if [[ -n "${OM_CACHE_DIR}" ]]; then
+      manifest_cmd+=(--om-cache-dir "${OM_CACHE_DIR}")
+    fi
+    "${manifest_cmd[@]}"
+  fi
   exit $?
 fi
 
+[[ -n "${MODEL_PATH}" ]] || MODEL_PATH="$(default_best_model_path)"
 MODEL_RESOLVED="$(resolve_existing_path "${MODEL_PATH}")" || fail "model not found: ${MODEL_PATH}"
 CLASSES_RESOLVED="$(resolve_existing_path "${CLASSES_PATH}")" || fail "classes file not found: ${CLASSES_PATH}"
 

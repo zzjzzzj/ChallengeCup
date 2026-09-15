@@ -23,7 +23,7 @@ Common options:
   --augmented-data PATH        Augmented dataset output. Default: <workspace>/augmented_dataset.
   --infer-input PATH           Image/directory/dataset to infer. Default: augmented dataset.
   --output-dir PATH            Inference output. Default: <workspace>/routed_infer,
-                               or <workspace>/best_6class_infer with --single-model.
+                               or <workspace>/best_6class_infer with --single/--single-model.
   --report-dir PATH            Agent report output. Default: <workspace>/agent_reports.
   --predictions PATH           Existing predictions.jsonl for --report-only.
   --memory PATH                Agent memory JSONL. Default: <workspace>/agent_memory.jsonl.
@@ -78,7 +78,7 @@ Model/path overrides:
   --scene-model PATH
   --easy-model PATH
   --hard-model PATH
-  --config PATH                Routed inference config. Default: deployment/ascend310bpro/config.json.
+  --config PATH                Routed inference config. Default: deployment/ascend310bpro/route_config.yaml.
   --python PATH                Python executable. Default: python3.
   -h, --help                   Show this help.
 EOF
@@ -661,6 +661,12 @@ if [[ "${RUN_CONVERT}" -eq 1 ]]; then
   fi
   echo "[INFO] Stage 3/5: ONNX to OM conversion"
   "${convert_cmd[@]}"
+  if [[ -z "${SINGLE_MODEL}" && -f "${SCRIPT_DIR}/model_manifest.json" ]]; then
+    echo "[INFO] Stage 3/5: routed model manifest verification"
+    "${PYTHON_BIN}" "${SCRIPT_DIR}/model_manifest.py" verify \
+      --config "${CONFIG_PATH}" \
+      --manifest "${SCRIPT_DIR}/model_manifest.json"
+  fi
 else
   echo "[INFO] Stage 3/5 skipped: conversion disabled"
 fi

@@ -23,10 +23,10 @@ This file records what was compared from `Agent/` and how the board-side
 
 | Capability | Pro file |
 | --- | --- |
-| ONNX input-size auto-detection for `best.onnx` | `infer_best_6class_npu.py` |
-| ONNX to cached OM conversion | `routed_infer_npu.py`, `run_best_6class_npu.sh`, `convert_models.sh` |
-| Six-class NPU inference | `infer_best_6class_npu.py` |
-| Optional scene/easy/hard routed inference | `routed_infer_npu.py`, `run_routed_infer.sh` |
+| Report-aligned scene/easy/hard routed inference | `route_config.yaml`, `routed_infer_npu.py`, `run_routed_infer.sh` |
+| ONNX to cached OM conversion | `routed_infer_npu.py`, `convert_models.sh` |
+| Model SHA-256 manifest | `model_manifest.py`, `run_model_manifest.sh` |
+| Optional single six-class baseline | `infer_best_6class_npu.py`, `run_best_6class_npu.sh` |
 | Offline YOLO dataset augmentation | `run_augment_yolo.sh` |
 | Board-side Class-IL wrapper | `run_class_il_training.sh` |
 
@@ -55,9 +55,9 @@ After `run_full_pipeline.sh`, the pro package produces:
 
 ```text
 <workspace>/augmented_dataset/data.yaml
-<workspace>/best_6class_infer/summary.json
-<workspace>/best_6class_infer/predictions.jsonl
-<workspace>/best_6class_infer/images/
+<workspace>/routed_infer/summary.json
+<workspace>/routed_infer/predictions.jsonl
+<workspace>/routed_infer/images/
 <workspace>/agent_reports/reports/*.json
 <workspace>/agent_reports/batch_summary.csv
 <workspace>/agent_reports/agent_summary.json
@@ -101,8 +101,8 @@ Report an already finished inference:
 
 ```bash
 bash deployment/ascend310bpro/run_agent_reports.sh \
-  --predictions outputs/ascend310bpro_full/best_6class_infer/predictions.jsonl \
-  --summary outputs/ascend310bpro_full/best_6class_infer/summary.json \
+  --predictions outputs/ascend310bpro_full/routed_infer/predictions.jsonl \
+  --summary outputs/ascend310bpro_full/routed_infer/summary.json \
   --output-dir outputs/ascend310bpro_full/agent_reports \
   --memory outputs/ascend310bpro_full/agent_memory.jsonl \
   --rewrite-memory \

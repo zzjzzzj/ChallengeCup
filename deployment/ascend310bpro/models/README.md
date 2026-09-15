@@ -1,16 +1,15 @@
 # Models
 
-For the corrected single six-class detector flow, place the exported detector
-here:
+For the report-aligned routed deployment, place these three ONNX files here:
 
 ```text
-best.onnx
+01_scene_router_224.onnx
+02_easy_detector_6class_640.onnx
+03_hard_detector_3class_960.onnx
 ```
 
-It is run with `deployment/ascend310bpro/run_best_6class_npu.sh` or with
-`run_full_pipeline.sh --single-model deployment/ascend310bpro/models/best.onnx`.
-The scripts also auto-detect `deployment/best.onnx` if that is where the
-exported file is kept.
+They are described by `../route_config.yaml`. `run_full_pipeline.sh`,
+`convert_models.sh`, and `check_models.sh` use this routed set by default.
 
 For optional Class-IL incremental training, keep a trainable initial model here
 as well:
@@ -22,20 +21,23 @@ yolo26n.pt
 Use `.pt` or `.yaml` for training. Use `.onnx` and `.om` only for export and
 NPU inference.
 
-You may also place the three routed inference models in this directory:
+You may also keep the optional single six-class baseline in this directory:
 
 ```text
-01_scene_router_224.onnx
-02_easy_detector_6class_640.onnx
-03_hard_detector_3class_960.onnx
+best.onnx
 ```
 
-The runtime can also use preconverted `.om` files. Update `../config.json` or
+It is run with `deployment/ascend310bpro/run_best_6class_npu.sh` or with
+`run_full_pipeline.sh --single --single-model deployment/ascend310bpro/models/best.onnx`.
+The scripts also auto-detect `deployment/best.onnx` if that is where the
+exported file is kept.
+
+The runtime can also use preconverted `.om` files. Update `../route_config.yaml` or
 pass `--scene-model`, `--easy-model`, and `--hard-model` if your filenames are
 different.
 
-The default `../config.json` also accepts the same names under the project-root
-`models/` directory, which is often more convenient on the board:
+The default `../route_config.yaml` also accepts the same names under the
+project-root `models/` directory, which is often more convenient on the board:
 
 ```text
 ChallengeCup/models/01_scene_router_224.onnx

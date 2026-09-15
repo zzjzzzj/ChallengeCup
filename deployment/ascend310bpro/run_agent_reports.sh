@@ -5,8 +5,8 @@ usage() {
   cat <<'EOF'
 Usage:
   bash deployment/ascend310bpro/run_agent_reports.sh \
-    --predictions outputs/ascend310bpro_full/best_6class_infer/predictions.jsonl \
-    --summary outputs/ascend310bpro_full/best_6class_infer/summary.json \
+    --predictions outputs/ascend310bpro_full/routed_infer/predictions.jsonl \
+    --summary outputs/ascend310bpro_full/routed_infer/summary.json \
     --output-dir outputs/ascend310bpro_full/agent_reports \
     --memory outputs/ascend310bpro_full/agent_memory.jsonl
 

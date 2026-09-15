@@ -20,6 +20,24 @@
 
 最终检测主表使用同一批 76 张测试图和同一套 COCO-style 101-point AP 实现。裁剪分类 Accuracy、整图存在判断 Exact Match 和检测 mAP 衡量的任务不同，不能直接比较大小。
 
+## 模型权重与运行结果
+
+经用户明确授权，当前 SC 基础模型、增量学习最终权重和脱敏运行结果已发布到 GitHub Release：
+
+**[`sc-models-2026-09-15`](https://github.com/zzjzzzj/ChallengeCup/releases/tag/sc-models-2026-09-15)**
+
+| 资产 | 作用 | 标记 |
+| --- | --- | --- |
+| [`r1-four-class-detector-easy-640.pt`](https://github.com/zzjzzzj/ChallengeCup/releases/download/sc-models-2026-09-15/r1-four-class-detector-easy-640.pt) | R1 四类基础检测模型 | 基础权重 |
+| [`r1-to-r2-replay200-best.pt`](https://github.com/zzjzzzj/ChallengeCup/releases/download/sc-models-2026-09-15/r1-to-r2-replay200-best.pt) | 四类模型经回放 200、30 epoch 增量训练后的六类模型 | R1→R2 推荐候选 |
+| [`class-il-er500-stage06-best.pt`](https://github.com/zzjzzzj/ChallengeCup/releases/download/sc-models-2026-09-15/class-il-er500-stage06-best.pt) | 六类别依次训练的 ER-500 最终模型 | 最终精度最佳 |
+| [`class-il-der500-stage06-best.pt`](https://github.com/zzjzzzj/ChallengeCup/releases/download/sc-models-2026-09-15/class-il-der500-stage06-best.pt) | 六类别依次训练的 DER-500 最终模型 | 抗遗忘最佳 |
+| [`sc-run-results-sanitized.zip`](https://github.com/zzjzzzj/ChallengeCup/releases/download/sc-models-2026-09-15/sc-run-results-sanitized.zip) | 4 组正式 Class-IL、R1→R2 和 Sparse-MoE 冒烟运行结果 | 已脱敏 |
+
+Release 同时提供 ER-200、DER-200、通用初始化权重、Sparse-MoE 冒烟权重、机器可读 manifest 和 SHA-256 清单。完整文件说明、实验口径与隐私边界见 [SC 模型与运行结果发布说明](docs/releases/SC模型与运行结果-20260915.md)。
+
+模型权重只作为 GitHub Release Assets 保存，不写入 Git 历史；原始数据、图像、标签和未脱敏运行目录仍禁止上传。
+
 ## 代码结构
 
 ```text
@@ -65,7 +83,7 @@ python train.py detection-matrix --help
 
 ## 数据目录
 
-原始数据和训练权重不包含在仓库中。场景基础数据应包含图像和同名 YOLO 标签；最终增广对比数据使用以下结构：
+原始数据不包含在仓库中。经授权公开的精选训练权重位于 GitHub Release，不写入 Git 历史；本地训练和数据准备仍使用以下结构：
 
 ```text
 yolo_augmented/
@@ -256,7 +274,7 @@ python -m unittest discover -v
 ## 上传 GitHub 前检查
 
 - 不上传赛事原始图像、标签、增广数据或任何含绝对本机路径的数据清单。
-- 不上传 `.pt`、`.onnx`、`.om`、`.joblib` 等模型文件。
+- 不把 `.pt`、`.onnx`、`.om`、`.joblib` 等模型文件直接提交到 Git 历史；获授权的精选模型通过 GitHub Release Assets 发布。
 - 不上传 `runs/`、训练日志、临时目录和本地缓存。
 - 赛事 PDF/Word 文档只保留在本机，已从发布历史和Git跟踪范围排除。
-- 训练结果只提交 `docs/results/` 中的脱敏 JSON 或整理后的 Markdown，不提交预测明细、原始 CSV 和大体积权重。
+- 训练结果只发布脱敏摘要、逐 epoch 指标或整理后的 Markdown，不发布预测明细和任何可还原原始数据的内容。

@@ -348,12 +348,15 @@ def summarize_rows(rows: Sequence[Dict[str, Any]], model_path: Path, class_names
             class_name = str(detection["class_name"])
             class_counts[class_name] = class_counts.get(class_name, 0) + 1
     avg_detector = sum(detector_times) / len(detector_times) if detector_times else 0.0
+    fps = 1000.0 / avg_detector if avg_detector > 0 else None
     return {
         "mode": "single_6class",
         "images": len(rows),
         "total_detections": total_detections,
         "class_counts": dict(sorted(class_counts.items())),
         "avg_detector_ms": round(avg_detector, 3),
+        "fps": round(fps, 3) if fps is not None else None,
+        "fps_definition": "NPU detector inference FPS = 1000 / average detector elapsed_ms; excludes image decode, preprocessing, postprocessing, and file I/O.",
         "models": {"single": str(model_path)},
         "class_names": list(class_names),
         "confidence": float(args.confidence),

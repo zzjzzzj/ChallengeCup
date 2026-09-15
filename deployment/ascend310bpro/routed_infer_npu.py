@@ -886,13 +886,14 @@ def run_scene_router(
     image_path: Path,
     section: Dict[str, Any],
 ) -> Dict[str, Any]:
+    stage_started = time.perf_counter()
     width, height = get_input_size(section, "scene_router")
     class_names = get_classes(section, "scene_router")
     with Image.open(image_path) as image:
         tensor = prepare_scene_tensor(image, width, height, str(section.get("preprocess", "resize")))
     started = time.perf_counter()
     outputs = model.infer(tensor.astype(np.float32), np.dtype(str(section.get("output_dtype", "float32"))))
-    elapsed_ms = (time.perf_counter() - started) * 1000.0
+    model_elapsed_ms = (time.perf_counter() - started) * 1000.0
     if not outputs:
         raise RuntimeError("Scene router produced no outputs.")
     scores = normalize_scene_scores(outputs[0], str(section.get("score_mode", "auto")))
@@ -905,7 +906,8 @@ def run_scene_router(
         "scene_name": class_names[scene_id],
         "confidence": float(scores[scene_id]),
         "scores": [float(item) for item in scores],
-        "elapsed_ms": elapsed_ms,
+        "elapsed_ms": (time.perf_counter() - stage_started) * 1000.0,
+        "model_elapsed_ms": model_elapsed_ms,
     }
 
 
@@ -927,13 +929,14 @@ def run_easy_detector(
     section: Dict[str, Any],
     min_box_size: float,
 ) -> Tuple[List[Detection], Dict[str, Any]]:
+    stage_started = time.perf_counter()
     width, height = get_input_size(section, "easy_branch")
     class_names = get_classes(section, "easy_branch")
     with Image.open(image_path) as image:
         tensor, transform = prepare_detector_tensor(image, width, height)
     started = time.perf_counter()
     outputs = model.infer(tensor.astype(np.float32), np.dtype(str(section.get("output_dtype", "float32"))))
-    elapsed_ms = (time.perf_counter() - started) * 1000.0
+    model_elapsed_ms = (time.perf_counter() - started) * 1000.0
     if not outputs:
         raise RuntimeError("Easy detector produced no outputs.")
     detections = decode_easy_output(
@@ -948,7 +951,8 @@ def run_easy_detector(
         float(section.get("iou", 0.55)),
     )
     return detections, {
-        "elapsed_ms": elapsed_ms,
+        "elapsed_ms": (time.perf_counter() - stage_started) * 1000.0,
+        "model_elapsed_ms": model_elapsed_ms,
         "input_size": [width, height],
         "output_count": int(outputs[0].size),
     }
@@ -966,6 +970,7 @@ def run_hard_detector(
     global_class_names: Sequence[str],
     min_box_size: float,
 ) -> Tuple[List[Detection], Dict[str, Any]]:
+    stage_started = time.perf_counter()
     width, height = get_input_size(section, "hard_branch")
     local_class_names = get_classes(section, "hard_branch")
     class_id_remap = parse_remap(section.get("class_id_remap", {"0": 0, "1": 3, "2": 5}))
@@ -973,7 +978,7 @@ def run_hard_detector(
         tensor, transform = prepare_detector_tensor(image, width, height)
     started = time.perf_counter()
     outputs = model.infer(tensor.astype(np.float32), np.dtype(str(section.get("output_dtype", "float32"))))
-    elapsed_ms = (time.perf_counter() - started) * 1000.0
+    model_elapsed_ms = (time.perf_counter() - started) * 1000.0
     if not outputs:
         raise RuntimeError("Hard detector produced no outputs.")
     detections = decode_hard_output(
@@ -991,7 +996,8 @@ def run_hard_detector(
         min_box_size,
     )
     return detections, {
-        "elapsed_ms": elapsed_ms,
+        "elapsed_ms": (time.perf_counter() - stage_started) * 1000.0,
+        "model_elapsed_ms": model_elapsed_ms,
         "input_size": [width, height],
         "output_count": int(outputs[0].size),
     }
@@ -1002,7 +1008,9 @@ def summarize_rows(rows: Sequence[Dict[str, Any]], model_paths: Dict[str, str], 
     scene_counts: Dict[str, int] = {}
     class_counts: Dict[str, int] = {}
     scene_times: List[float] = []
+    scene_model_times: List[float] = []
     detector_times: Dict[str, List[float]] = {"easy": [], "hard": []}
+    detector_model_times: Dict[str, List[float]] = {"easy": [], "hard": []}
     total_detections = 0
     for row in rows:
         scene = row["scene"]
@@ -1010,16 +1018,41 @@ def summarize_rows(rows: Sequence[Dict[str, Any]], model_paths: Dict[str, str], 
         route_counts[detector["route"]] = route_counts.get(detector["route"], 0) + 1
         scene_counts[scene["name"]] = scene_counts.get(scene["name"], 0) + 1
         scene_times.append(float(scene["elapsed_ms"]))
+        scene_model_times.append(float(scene.get("model_elapsed_ms", scene["elapsed_ms"])))
         detector_times[detector["route"]].append(float(detector["elapsed_ms"]))
+        detector_model_times[detector["route"]].append(
+            float(detector.get("model_elapsed_ms", detector["elapsed_ms"]))
+        )
         for detection in row["detections"]:
             total_detections += 1
             class_name = str(detection["class_name"])
             class_counts[class_name] = class_counts.get(class_name, 0) + 1
     avg_scene = sum(scene_times) / len(scene_times) if scene_times else 0.0
+    avg_scene_model = sum(scene_model_times) / len(scene_model_times) if scene_model_times else 0.0
     avg_detector = {
         key: (sum(values) / len(values) if values else 0.0)
         for key, values in detector_times.items()
     }
+    avg_detector_model = {
+        key: (sum(values) / len(values) if values else 0.0)
+        for key, values in detector_model_times.items()
+    }
+    detector_count = sum(len(values) for values in detector_times.values())
+    weighted_detector = (
+        sum(sum(values) for values in detector_times.values()) / detector_count
+        if detector_count
+        else 0.0
+    )
+    detector_model_count = sum(len(values) for values in detector_model_times.values())
+    weighted_detector_model = (
+        sum(sum(values) for values in detector_model_times.values()) / detector_model_count
+        if detector_model_count
+        else 0.0
+    )
+    avg_end_to_end = avg_scene + weighted_detector
+    avg_model_only = avg_scene_model + weighted_detector_model
+    fps = 1000.0 / avg_end_to_end if avg_end_to_end > 0 else None
+    pure_model_fps = 1000.0 / avg_model_only if avg_model_only > 0 else None
     return {
         "images": len(rows),
         "total_detections": total_detections,
@@ -1027,7 +1060,14 @@ def summarize_rows(rows: Sequence[Dict[str, Any]], model_paths: Dict[str, str], 
         "scene_counts": dict(sorted(scene_counts.items())),
         "class_counts": dict(sorted(class_counts.items())),
         "avg_scene_ms": round(avg_scene, 3),
+        "avg_scene_model_ms": round(avg_scene_model, 3),
         "avg_detector_ms": {key: round(value, 3) for key, value in avg_detector.items()},
+        "avg_detector_model_ms": {key: round(value, 3) for key, value in avg_detector_model.items()},
+        "avg_end_to_end_ms": round(avg_end_to_end, 3),
+        "avg_model_only_ms": round(avg_model_only, 3),
+        "fps": round(fps, 3) if fps is not None else None,
+        "pure_model_fps": round(pure_model_fps, 3) if pure_model_fps is not None else None,
+        "fps_definition": "routed per-image FPS = 1000 / (average scene-router stage time + route-weighted detector stage time); stage time includes image decode, preprocessing, NPU execution, output decoding and NMS, and excludes model loading plus file writing.",
         "models": model_paths,
         "route_confidence": float(config.get("route_confidence", 0.60)),
         "uncertain_route": str(config.get("uncertain_route", "hard")),

@@ -1,0 +1,133 @@
+{
+  "manifest_version": "ascend310bpro-routed-manifest-v1",
+  "generated_at": "2026-09-15T05:18:55.364115Z",
+  "config": "deployment/ascend310bpro/route_config.yaml",
+  "soc_version": "Ascend310B4",
+  "route_confidence": 0.6,
+  "uncertain_route": "hard",
+  "global_classes": [
+    "soldier",
+    "small_aircraft",
+    "warship",
+    "tank",
+    "patrol_boat",
+    "armored_vehicle"
+  ],
+  "artifacts": [
+    {
+      "role": "scene_router",
+      "configured_model": "models/01_scene_router_224.onnx",
+      "searched": [
+        "deployment/ascend310bpro/models/01_scene_router_224.onnx",
+        "models/01_scene_router_224.onnx"
+      ],
+      "model": {
+        "path": "deployment/ascend310bpro/models/01_scene_router_224.onnx",
+        "exists": true,
+        "bytes": 5789358,
+        "sha256": "64bd4faa1c2f75e32c4b98ce9c85fc1cbc43e2d3fc59ce2b36fed614ba46055d"
+      },
+      "input_name": "images",
+      "input_size": [
+        224,
+        224
+      ],
+      "classes": [
+        "air",
+        "forest",
+        "sea",
+        "urban"
+      ],
+      "output_dtype": "float32",
+      "preprocess": "short_center_crop",
+      "easy_scenes": [
+        "air",
+        "sea"
+      ],
+      "score_mode": "auto",
+      "cached_om": {
+        "path": "deployment/ascend310bpro/models/01_scene_router_224_224x224_Ascend310B4.om",
+        "exists": false
+      }
+    },
+    {
+      "role": "easy_branch",
+      "configured_model": "models/02_easy_detector_6class_640.onnx",
+      "searched": [
+        "deployment/ascend310bpro/models/02_easy_detector_6class_640.onnx",
+        "models/02_easy_detector_6class_640.onnx"
+      ],
+      "model": {
+        "path": "deployment/ascend310bpro/models/02_easy_detector_6class_640.onnx",
+        "exists": true,
+        "bytes": 9304911,
+        "sha256": "864ddf6a59fe276a8c23686e3c011d8068f51e5baee6cb077e089433cead8b17"
+      },
+      "input_name": "images",
+      "input_size": [
+        640,
+        640
+      ],
+      "classes": [
+        "soldier",
+        "small_aircraft",
+        "warship",
+        "tank",
+        "patrol_boat",
+        "armored_vehicle"
+      ],
+      "output_dtype": "float32",
+      "output_mode": "nms",
+      "nms_format": "xyxy-conf-class",
+      "coords": "letterbox",
+      "apply_nms": false,
+      "confidence": 0.25,
+      "iou": 0.55,
+      "cached_om": {
+        "path": "deployment/ascend310bpro/models/02_easy_detector_6class_640_640x640_Ascend310B4.om",
+        "exists": false
+      }
+    },
+    {
+      "role": "hard_branch",
+      "configured_model": "models/03_hard_detector_3class_960.onnx",
+      "searched": [
+        "deployment/ascend310bpro/models/03_hard_detector_3class_960.onnx",
+        "models/03_hard_detector_3class_960.onnx"
+      ],
+      "model": {
+        "path": "deployment/ascend310bpro/models/03_hard_detector_3class_960.onnx",
+        "exists": true,
+        "bytes": 12476980,
+        "sha256": "0d29b542a158e0835c4a32ef42e42f164645b2caa76b0b2df5a28a0723798b3d"
+      },
+      "input_name": "images",
+      "input_size": [
+        960,
+        960
+      ],
+      "classes": [
+        "soldier",
+        "tank",
+        "armored_vehicle"
+      ],
+      "output_dtype": "float32",
+      "output_mode": "raw",
+      "coords": "letterbox",
+      "raw_layout": "channels-first",
+      "box_format": "xywh",
+      "score_activation": "auto",
+      "class_id_remap": {
+        "0": 0,
+        "1": 3,
+        "2": 5
+      },
+      "confidence": 0.25,
+      "iou": 0.55,
+      "cached_om": {
+        "path": "deployment/ascend310bpro/models/03_hard_detector_3class_960_960x960_Ascend310B4.om",
+        "exists": false
+      }
+    }
+  ]
+}

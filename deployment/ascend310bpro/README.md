@@ -26,14 +26,17 @@ raw YOLO dataset
   -> Agent-style reports / CSV / memory
 ```
 
-Current default model path:
+Default routed model set:
 
 ```text
-deployment/ascend310bpro/models/best.onnx
+deployment/ascend310bpro/models/01_scene_router_224.onnx
+deployment/ascend310bpro/models/02_easy_detector_6class_640.onnx
+deployment/ascend310bpro/models/03_hard_detector_3class_960.onnx
 ```
 
-If it is missing, scripts also try `deployment/best.onnx` and
-`models/best.onnx`.
+The routing protocol is defined by `deployment/ascend310bpro/route_config.yaml`.
+It uses air/sea as the easy branch and forest/urban plus low-confidence scenes
+as the hard branch. `best.onnx` is kept as an optional single-detector baseline.
 
 Class order is fixed by:
 
@@ -66,6 +69,13 @@ Check the runtime:
 ```bash
 bash deployment/ascend310bpro/check_env.sh
 bash deployment/ascend310bpro/check_models.sh --soc-version Ascend310B4
+bash deployment/ascend310bpro/run_model_manifest.sh verify
+```
+
+After replacing any routed ONNX model, rebuild the SHA manifest:
+
+```bash
+bash deployment/ascend310bpro/run_model_manifest.sh build --soc-version Ascend310B4
 ```
 
 ## One Command Full Pipeline
@@ -91,9 +101,9 @@ Main outputs:
 
 ```text
 outputs/ascend310bpro_full/augmented_dataset/data.yaml
-outputs/ascend310bpro_full/best_6class_infer/summary.json
-outputs/ascend310bpro_full/best_6class_infer/predictions.jsonl
-outputs/ascend310bpro_full/best_6class_infer/images/
+outputs/ascend310bpro_full/routed_infer/summary.json
+outputs/ascend310bpro_full/routed_infer/predictions.jsonl
+outputs/ascend310bpro_full/routed_infer/images/
 outputs/ascend310bpro_full/agent_reports/reports/*.json
 outputs/ascend310bpro_full/agent_reports/batch_summary.csv
 outputs/ascend310bpro_full/agent_reports/agent_summary.json
@@ -113,7 +123,16 @@ bash deployment/ascend310bpro/run_full_pipeline.sh \
   --include-modality
 ```
 
-Or call the detector directly:
+Or call routed inference directly:
+
+```bash
+bash deployment/ascend310bpro/run_routed_infer.sh \
+  --input data/datasets_r1_base_train \
+  --soc-version Ascend310B4 \
+  --output-dir outputs/ascend310bpro_routed
+```
+
+To run the optional single six-class baseline instead:
 
 ```bash
 bash deployment/ascend310bpro/run_best_6class_npu.sh \
@@ -124,9 +143,28 @@ bash deployment/ascend310bpro/run_best_6class_npu.sh \
   --output-dir outputs/ascend310bpro_best
 ```
 
-The script auto-detects the static ONNX input size. For the current
+The single-model script auto-detects the static ONNX input size. For
 `best.onnx`, this avoids the earlier ATC reshape error caused by forcing
 `960x960` on a model exported as another size.
+
+## Model Manifest
+
+`model_manifest.json` records the three routed ONNX hashes, expected input
+sizes, class lists, scene preprocessing, and hard-branch class remap. Rebuild it
+after exporting new routed models:
+
+```bash
+bash deployment/ascend310bpro/run_model_manifest.sh build --soc-version Ascend310B4
+bash deployment/ascend310bpro/run_model_manifest.sh verify
+```
+
+## INT8 Quantization Status
+
+The current board package performs ONNX to OM conversion and NPU inference, but
+does not claim INT8 calibration automatically. Use the default FP16/ATC
+deployment for runnable evidence first. Add INT8 only after the Ascend AMCT
+toolchain and a fixed calibration set are available, then rebuild the manifest
+for the quantized artifacts.
 
 ## Only Build Agent Reports
 
@@ -134,15 +172,15 @@ This is useful when NPU inference already finished:
 
 ```bash
 bash deployment/ascend310bpro/run_agent_reports.sh \
-  --predictions outputs/ascend310bpro_full/best_6class_infer/predictions.jsonl \
-  --summary outputs/ascend310bpro_full/best_6class_infer/summary.json \
+  --predictions outputs/ascend310bpro_full/routed_infer/predictions.jsonl \
+  --summary outputs/ascend310bpro_full/routed_infer/summary.json \
   --output-dir outputs/ascend310bpro_full/agent_reports \
   --memory outputs/ascend310bpro_full/agent_memory.jsonl \
   --rewrite-memory \
   --include-modality
 ```
 
-It supports the current single-model output, the older routed output, and the
+It supports the routed output, the single-model baseline output, and the
 earlier main/expert/final cascade output.
 
 ## Optional Incremental Training
@@ -185,7 +223,9 @@ bash deployment/ascend310bpro/run_class_il_training.sh \
 
 After training, export the final `best.pt` to ONNX on the machine where your
 Ultralytics export stack works, then place the new ONNX under
-`deployment/ascend310bpro/models/best.onnx` and rerun conversion/inference.
+the matching routed branch path in `deployment/ascend310bpro/models/`, or under
+`deployment/ascend310bpro/models/best.onnx` for the optional single baseline,
+then rerun conversion/inference.
 
 ## PC Before-Model Training
 
@@ -290,7 +330,7 @@ bash deployment/ascend310bpro/run_tzb_submission.sh \
   --increment-data /path/to/increment_test_data.yaml \
   --before-model /path/to/increment_before.pt \
   --after-model /path/to/increment_after.pt \
-  --npu-summary outputs/ascend310bpro_full/best_6class_infer/summary.json \
+  --npu-summary outputs/ascend310bpro_full/routed_infer/summary.json \
   --agent-summary outputs/ascend310bpro_full/agent_reports/agent_summary.json \
   --output-dir outputs/ascend310bpro_full/tzb_submission \
   --device cpu \
@@ -303,7 +343,7 @@ mAP metrics, package only the board-side FPS and Agent evidence:
 ```bash
 bash deployment/ascend310bpro/run_tzb_submission.sh \
   --skip-map \
-  --npu-summary outputs/ascend310bpro_full/best_6class_infer/summary.json \
+  --npu-summary outputs/ascend310bpro_full/routed_infer/summary.json \
   --agent-summary outputs/ascend310bpro_full/agent_reports/agent_summary.json \
   --output-dir outputs/ascend310bpro_full/tzb_submission
 ```
@@ -333,18 +373,51 @@ bash deployment/ascend310bpro/run_tzb_board_tests.sh \
 This writes `base_before`, `base_after`, and `increment_after` prediction
 folders for `data/testdata/base_test_r1` and `data/testdata/inc_test_r2`.
 
-## Routed Mode
+## Single-Model Baseline
 
-The older scene/easy/hard routed deployment is still available:
+The optional single six-class `best.onnx` deployment is still available:
 
 ```bash
 bash deployment/ascend310bpro/run_full_pipeline.sh \
   --data data/datasets_r1_base_train \
-  --workspace outputs/ascend310bpro_routed \
-  --routed \
+  --workspace outputs/ascend310bpro_single \
+  --single \
   --reuse-augmented \
   --soc-version Ascend310B4
 ```
 
-Use it only when the three routed models are the desired strategy. The current
-default is the single six-class `best.onnx`.
+Use it as a baseline or emergency fallback. The report-aligned default is the
+scene/easy/hard routed deployment in `route_config.yaml`.
+
+## Required Test Indicators
+
+The board submission protocol is implemented by `evaluate_tzb.py` and uses
+the same fixed test images and NPU prediction JSONL files that were actually
+run on Ascend 310B:
+
+```text
+base test + before model -> base mAP
+base test + after model  -> after-base mAP
+base before/after mAP    -> KRR = after old-class mAP / before old-class mAP
+new test + after model   -> New-mAP (new classes only)
+inference summary.json   -> FPS
+```
+
+Run it after collecting the three prediction files:
+
+```bash
+bash deployment/ascend310bpro/run_evaluate_tzb.sh \
+  --base-data data/base_test \
+  --new-data data/incremental_test \
+  --before-predictions outputs/before/predictions.jsonl \
+  --after-base-predictions outputs/after_base/predictions.jsonl \
+  --after-new-predictions outputs/after_new/predictions.jsonl \
+  --fps-summary outputs/after_new/summary.json \
+  --output outputs/ascend310bpro_tzb_metrics/metrics.json
+```
+
+The CSV scorecard contains exactly `mAP@0.5`, `KRR`, `New-mAP`, and `FPS`; the
+JSON also preserves `mAP-before` and `mAP-after` for auditability.  `summary.json` now records the measured FPS and its scope.  The
+evaluator refuses to mark the report ready when a class has no ground-truth
+support or FPS evidence is missing; it never substitutes training accuracy for
+the required test metrics.
