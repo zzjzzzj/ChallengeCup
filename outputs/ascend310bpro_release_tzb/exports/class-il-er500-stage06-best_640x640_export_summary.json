@@ -1,0 +1,14 @@
+{
+  "reused": false,
+  "pytorch_model": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/deployment/ascend310bpro/models/class-il-er500-stage06-best.pt",
+  "ultralytics_export": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/deployment/ascend310bpro/models/class-il-er500-stage06-best.onnx",
+  "onnx_model": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/exports/class-il-er500-stage06-best_640x640.onnx",
+  "onnx_bytes": 9751111,
+  "image_size": 640,
+  "batch": 1,
+  "dynamic": false,
+  "simplify": false,
+  "opset": 12,
+  "half": false,
+  "device": "cpu"
+}

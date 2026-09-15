@@ -1,0 +1,44 @@
+{
+  "mode": "single_6class",
+  "images": 270,
+  "total_detections": 1074,
+  "class_counts": {
+    "armored_vehicle": 303,
+    "patrol_boat": 356,
+    "small_aircraft": 174,
+    "soldier": 2,
+    "tank": 62,
+    "warship": 177
+  },
+  "avg_detector_ms": 571.055,
+  "avg_detector_model_ms": 24.832,
+  "avg_end_to_end_ms": 571.055,
+  "fps": 1.751,
+  "pure_model_fps": 40.271,
+  "fps_definition": "single-detector per-image FPS = 1000 / average detector stage time; stage time includes image decode, preprocessing, NPU execution, output decoding and NMS, and excludes model loading plus file writing.",
+  "models": {
+    "single": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/exports/class-il-er500-stage06-best_640x640_640x640_Ascend310B4.om"
+  },
+  "class_names": [
+    "soldier",
+    "small_aircraft",
+    "warship",
+    "tank",
+    "patrol_boat",
+    "armored_vehicle"
+  ],
+  "confidence": 0.25,
+  "iou": 0.55,
+  "input_size": [
+    640,
+    640
+  ],
+  "decode_mode": "auto",
+  "decode_modes": {
+    "raw": 270
+  },
+  "raw_layout": null,
+  "raw_box_format": null,
+  "raw_score_activation": null,
+  "predictions_jsonl": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/increment_after/predictions.jsonl"
+}

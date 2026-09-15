@@ -1,0 +1,14 @@
+{
+  "reused": false,
+  "pytorch_model": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/deployment/ascend310bpro/models/r1-four-class-detector-easy-640.pt",
+  "ultralytics_export": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/deployment/ascend310bpro/models/r1-four-class-detector-easy-640.onnx",
+  "onnx_model": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/exports/r1-four-class-detector-easy-640_640x640.onnx",
+  "onnx_bytes": 12240909,
+  "image_size": 640,
+  "batch": 1,
+  "dynamic": false,
+  "simplify": false,
+  "opset": 12,
+  "half": false,
+  "device": "cpu"
+}

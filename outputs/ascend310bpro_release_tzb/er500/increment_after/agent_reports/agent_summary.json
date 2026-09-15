@@ -1,0 +1,78 @@
+{
+  "images": 270,
+  "total_detections": 1074,
+  "class_counts": {
+    "armored_vehicle": 303,
+    "patrol_boat": 356,
+    "small_aircraft": 174,
+    "soldier": 2,
+    "tank": 62,
+    "warship": 177
+  },
+  "scene_counts": {
+    "air": 36,
+    "sea": 114,
+    "uncertain": 2,
+    "urban": 118
+  },
+  "modality_counts": {
+    "unknown": 270
+  },
+  "consistency_counts": {
+    "consistent": 264,
+    "invalid_combination": 6
+  },
+  "source_predictions": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/increment_after/predictions.jsonl",
+  "source_summary": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/increment_after/summary.json",
+  "source_inference_summary": {
+    "mode": "single_6class",
+    "images": 270,
+    "total_detections": 1074,
+    "class_counts": {
+      "armored_vehicle": 303,
+      "patrol_boat": 356,
+      "small_aircraft": 174,
+      "soldier": 2,
+      "tank": 62,
+      "warship": 177
+    },
+    "avg_detector_ms": 571.055,
+    "avg_detector_model_ms": 24.832,
+    "avg_end_to_end_ms": 571.055,
+    "fps": 1.751,
+    "pure_model_fps": 40.271,
+    "fps_definition": "single-detector per-image FPS = 1000 / average detector stage time; stage time includes image decode, preprocessing, NPU execution, output decoding and NMS, and excludes model loading plus file writing.",
+    "models": {
+      "single": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/exports/class-il-er500-stage06-best_640x640_640x640_Ascend310B4.om"
+    },
+    "class_names": {
+      "type": "list",
+      "items": 6
+    },
+    "confidence": 0.25,
+    "iou": 0.55,
+    "input_size": {
+      "type": "list",
+      "items": 2
+    },
+    "decode_mode": "auto",
+    "decode_modes": {
+      "raw": 270
+    },
+    "raw_layout": null,
+    "raw_box_format": null,
+    "raw_score_activation": null,
+    "predictions_jsonl": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/increment_after/predictions.jsonl"
+  },
+  "report_dir": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/increment_after/agent_reports/reports",
+  "batch_summary_csv": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/increment_after/agent_reports/batch_summary.csv",
+  "memory": {
+    "memory_path": "",
+    "recent_records": 0,
+    "recent_reports": 0,
+    "recent_feedback": 0,
+    "scene_counts": {},
+    "modality_counts": {},
+    "target_counts": {}
+  }
+}

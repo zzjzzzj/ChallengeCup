@@ -283,16 +283,18 @@ def run_single_image(
     class_names: Sequence[str],
     args: argparse.Namespace,
 ) -> Dict[str, Any]:
+    stage_started = time.perf_counter()
     with Image.open(image_path) as image:
         tensor, transform = prepare_detector_tensor(image, args.width, args.height)
         image_size = [image.size[0], image.size[1]]
     started = time.perf_counter()
     outputs = model.infer(tensor.astype(np.float32), np.dtype(args.output_dtype))
-    elapsed_ms = (time.perf_counter() - started) * 1000.0
+    model_elapsed_ms = (time.perf_counter() - started) * 1000.0
     if not outputs:
         raise RuntimeError("model produced no outputs: %s" % model_path)
 
-    if args.decode_mode == "raw":
+    decode_mode = choose_decode_mode(outputs[0], len(class_names), args.decode_mode)
+    if decode_mode == "raw":
         class_id_remap = {index: index for index in range(len(class_names))}
         detections = decode_hard_output(
             outputs[0],
@@ -328,41 +330,71 @@ def run_single_image(
         "detector": {
             "route": "single",
             "route_reason": "single_detector_model",
-            "elapsed_ms": round(elapsed_ms, 3),
+            "elapsed_ms": round((time.perf_counter() - stage_started) * 1000.0, 3),
+            "model_elapsed_ms": round(model_elapsed_ms, 3),
             "input_size": [args.width, args.height],
-            "decode_mode": args.decode_mode,
+            "decode_mode": decode_mode,
             "output_count": int(outputs[0].size),
         },
         "detections": [detection.to_dict() for detection in detections],
     }
 
 
+def choose_decode_mode(output: np.ndarray, class_count: int, requested: str) -> str:
+    if requested != "auto":
+        return requested
+    channel_count = 4 + class_count
+    squeezed = np.squeeze(output)
+    if squeezed.ndim == 2:
+        if squeezed.shape[1] == 6 or squeezed.shape[0] == 6:
+            return "nms"
+        if squeezed.shape[0] == channel_count or squeezed.shape[1] == channel_count:
+            return "raw"
+    if squeezed.ndim == 1:
+        if squeezed.size % channel_count == 0:
+            return "raw"
+        if squeezed.size % 6 == 0:
+            return "nms"
+    return "raw"
+
+
 def summarize_rows(rows: Sequence[Dict[str, Any]], model_path: Path, class_names: Sequence[str], args: argparse.Namespace) -> Dict[str, Any]:
     class_counts: Dict[str, int] = {}
     detector_times: List[float] = []
+    detector_model_times: List[float] = []
+    decode_modes: Dict[str, int] = {}
     total_detections = 0
     for row in rows:
         detector_times.append(float(row["detector"]["elapsed_ms"]))
+        detector_model_times.append(float(row["detector"].get("model_elapsed_ms", row["detector"]["elapsed_ms"])))
+        mode = str(row.get("detector", {}).get("decode_mode", args.decode_mode))
+        decode_modes[mode] = decode_modes.get(mode, 0) + 1
         for detection in row["detections"]:
             total_detections += 1
             class_name = str(detection["class_name"])
             class_counts[class_name] = class_counts.get(class_name, 0) + 1
     avg_detector = sum(detector_times) / len(detector_times) if detector_times else 0.0
+    avg_detector_model = sum(detector_model_times) / len(detector_model_times) if detector_model_times else 0.0
     fps = 1000.0 / avg_detector if avg_detector > 0 else None
+    pure_model_fps = 1000.0 / avg_detector_model if avg_detector_model > 0 else None
     return {
         "mode": "single_6class",
         "images": len(rows),
         "total_detections": total_detections,
         "class_counts": dict(sorted(class_counts.items())),
         "avg_detector_ms": round(avg_detector, 3),
+        "avg_detector_model_ms": round(avg_detector_model, 3),
+        "avg_end_to_end_ms": round(avg_detector, 3),
         "fps": round(fps, 3) if fps is not None else None,
-        "fps_definition": "NPU detector inference FPS = 1000 / average detector elapsed_ms; excludes image decode, preprocessing, postprocessing, and file I/O.",
+        "pure_model_fps": round(pure_model_fps, 3) if pure_model_fps is not None else None,
+        "fps_definition": "single-detector per-image FPS = 1000 / average detector stage time; stage time includes image decode, preprocessing, NPU execution, output decoding and NMS, and excludes model loading plus file writing.",
         "models": {"single": str(model_path)},
         "class_names": list(class_names),
         "confidence": float(args.confidence),
         "iou": float(args.iou),
         "input_size": [int(args.width), int(args.height)],
         "decode_mode": args.decode_mode,
+        "decode_modes": dict(sorted(decode_modes.items())),
         "raw_layout": args.raw_layout if args.decode_mode == "raw" else None,
         "raw_box_format": args.raw_box_format if args.decode_mode == "raw" else None,
         "raw_score_activation": args.raw_score_activation if args.decode_mode == "raw" else None,
@@ -394,9 +426,9 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument("--nms-format", default="xyxy-conf-class")
     parser.add_argument(
         "--decode-mode",
-        choices=["nms", "raw"],
+        choices=["auto", "nms", "raw"],
         default="nms",
-        help="nms decodes compact [x1,y1,x2,y2,conf,class] output; raw decodes plain YOLO [4+nc,anchors] output.",
+        help="auto chooses compact NMS [x1,y1,x2,y2,conf,class] or raw YOLO [4+nc,anchors] from output shape.",
     )
     parser.add_argument("--raw-layout", choices=["channels-first", "channels-last"], default="channels-first")
     parser.add_argument("--raw-box-format", choices=["xywh", "xyxy"], default="xywh")

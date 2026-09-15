@@ -1,0 +1,648 @@
+{
+  "image": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/data/testdata/inc_test_r2/65.png",
+  "image_size": [
+    640,
+    512
+  ],
+  "input_modalities": {},
+  "modality": {
+    "label": "unknown",
+    "confidence": 0.34,
+    "probabilities": {
+      "visible": 0.34,
+      "ir": 0.33,
+      "sar": 0.33
+    },
+    "source": "unknown",
+    "details": {
+      "tokens": [
+        "home",
+        "hwhiaiuser",
+        "desktop",
+        "workspace",
+        "challengecup",
+        "data",
+        "testdata",
+        "inc",
+        "test",
+        "r2",
+        "65",
+        "png"
+      ]
+    }
+  },
+  "scene": {
+    "label": "uncertain",
+    "confidence": 0.25,
+    "probabilities": {
+      "air": 0.25,
+      "sea": 0.25,
+      "urban": 0.25,
+      "forest": 0.25
+    },
+    "source": "unavailable",
+    "details": {}
+  },
+  "final_scene": {
+    "label": "sea",
+    "confidence": 0.417261,
+    "probabilities": {
+      "air": 0.207739,
+      "sea": 0.417261,
+      "urban": 0.1875,
+      "forest": 0.1875
+    },
+    "source": "scene_target_consistency_fusion",
+    "details": {
+      "raw_scene": "uncertain",
+      "target_vote": {
+        "air": 0.363525,
+        "sea": 4.126954,
+        "urban": 0.0,
+        "forest": 0.0
+      },
+      "invalid_after_fusion": 1
+    }
+  },
+  "environment": {
+    "source": "prediction_metadata",
+    "noise_level": "unknown",
+    "clarity_level": "unknown",
+    "target_count": 8,
+    "route": "single"
+  },
+  "preprocessing": {
+    "augmentation_plan": {
+      "status": "offline_dataset_augmentation",
+      "note": "训练数据增广由 run_augment_yolo.sh / run_full_pipeline.sh 完成，推理阶段不改写原图。"
+    },
+    "aligned_modalities": {}
+  },
+  "detections": [
+    {
+      "track_id": "det_0001",
+      "class_id": 4,
+      "class_name": "patrol_boat",
+      "label_cn": "巡逻艇",
+      "confidence": 0.712891,
+      "bbox_xyxy": [
+        590.5,
+        254.125,
+        605.5,
+        269.875
+      ],
+      "bbox_xywh": [
+        590.5,
+        254.125,
+        15.0,
+        15.75
+      ],
+      "xyxy_norm": [
+        0.92265625,
+        0.49633789,
+        0.94609375,
+        0.52709961
+      ],
+      "area": 236.25,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0002",
+      "class_id": 2,
+      "class_name": "warship",
+      "label_cn": "军舰/船舶",
+      "confidence": 0.699219,
+      "bbox_xyxy": [
+        399.5,
+        171.188,
+        439.0,
+        200.812
+      ],
+      "bbox_xywh": [
+        399.5,
+        171.188,
+        39.5,
+        29.624
+      ],
+      "xyxy_norm": [
+        0.62421875,
+        0.33435156,
+        0.6859375,
+        0.39221094
+      ],
+      "area": 1170.148,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0003",
+      "class_id": 2,
+      "class_name": "warship",
+      "label_cn": "军舰/船舶",
+      "confidence": 0.685059,
+      "bbox_xyxy": [
+        288.375,
+        238.25,
+        351.625,
+        281.75
+      ],
+      "bbox_xywh": [
+        288.375,
+        238.25,
+        63.25,
+        43.5
+      ],
+      "xyxy_norm": [
+        0.45058594,
+        0.46533203,
+        0.54941406,
+        0.55029297
+      ],
+      "area": 2751.375,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0004",
+      "class_id": 4,
+      "class_name": "patrol_boat",
+      "label_cn": "巡逻艇",
+      "confidence": 0.67334,
+      "bbox_xyxy": [
+        343.75,
+        377.25,
+        368.25,
+        400.75
+      ],
+      "bbox_xywh": [
+        343.75,
+        377.25,
+        24.5,
+        23.5
+      ],
+      "xyxy_norm": [
+        0.53710938,
+        0.73681641,
+        0.57539063,
+        0.78271484
+      ],
+      "area": 575.75,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0005",
+      "class_id": 2,
+      "class_name": "warship",
+      "label_cn": "军舰/船舶",
+      "confidence": 0.550781,
+      "bbox_xyxy": [
+        99.125,
+        238.375,
+        180.375,
+        280.625
+      ],
+      "bbox_xywh": [
+        99.125,
+        238.375,
+        81.25,
+        42.25
+      ],
+      "xyxy_norm": [
+        0.15488281,
+        0.46557617,
+        0.28183594,
+        0.5480957
+      ],
+      "area": 3432.812,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0006",
+      "class_id": 4,
+      "class_name": "patrol_boat",
+      "label_cn": "巡逻艇",
+      "confidence": 0.508301,
+      "bbox_xyxy": [
+        91.094,
+        351.875,
+        121.906,
+        374.125
+      ],
+      "bbox_xywh": [
+        91.094,
+        351.875,
+        30.812,
+        22.25
+      ],
+      "xyxy_norm": [
+        0.14233437,
+        0.68725586,
+        0.19047812,
+        0.73071289
+      ],
+      "area": 685.567,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0007",
+      "class_id": 1,
+      "class_name": "small_aircraft",
+      "label_cn": "小型飞机",
+      "confidence": 0.363525,
+      "bbox_xyxy": [
+        91.0,
+        352.0,
+        121.875,
+        374.0
+      ],
+      "bbox_xywh": [
+        91.0,
+        352.0,
+        30.875,
+        22.0
+      ],
+      "xyxy_norm": [
+        0.1421875,
+        0.6875,
+        0.19042969,
+        0.73046875
+      ],
+      "area": 679.25,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0008",
+      "class_id": 4,
+      "class_name": "patrol_boat",
+      "label_cn": "巡逻艇",
+      "confidence": 0.297363,
+      "bbox_xyxy": [
+        385.25,
+        149.562,
+        396.75,
+        159.938
+      ],
+      "bbox_xywh": [
+        385.25,
+        149.562,
+        11.5,
+        10.376
+      ],
+      "xyxy_norm": [
+        0.60195312,
+        0.29211328,
+        0.61992187,
+        0.31237891
+      ],
+      "area": 119.324,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    }
+  ],
+  "output_summary": {
+    "target_type_count": 3,
+    "target_total_count": 8,
+    "targets": [
+      {
+        "label": "patrol_boat",
+        "label_cn": "巡逻艇",
+        "count": 4,
+        "max_confidence": 0.712891,
+        "mean_confidence": 0.547974,
+        "confidences": [
+          0.712891,
+          0.67334,
+          0.508301,
+          0.297363
+        ]
+      },
+      {
+        "label": "warship",
+        "label_cn": "军舰/船舶",
+        "count": 3,
+        "max_confidence": 0.699219,
+        "mean_confidence": 0.64502,
+        "confidences": [
+          0.699219,
+          0.685059,
+          0.550781
+        ]
+      },
+      {
+        "label": "small_aircraft",
+        "label_cn": "小型飞机",
+        "count": 1,
+        "max_confidence": 0.363525,
+        "mean_confidence": 0.363525,
+        "confidences": [
+          0.363525
+        ]
+      }
+    ],
+    "target_details": "巡逻艇 4 个（置信度：0.71、0.67、0.51、0.30）；军舰/船舶 3 个（置信度：0.70、0.69、0.55）；小型飞机 1 个（置信度：0.36）",
+    "max_confidence": 0.712891,
+    "mean_confidence": 0.56131,
+    "description": "图像场景分类：海洋。检测到 8 个目标，包含 3 类：巡逻艇 4 个（置信度：0.71、0.67、0.51、0.30）；军舰/船舶 3 个（置信度：0.70、0.69、0.55）；小型飞机 1 个（置信度：0.36）。"
+  },
+  "consistency": {
+    "status": "invalid_combination",
+    "target_counts": {
+      "patrol_boat": 4,
+      "small_aircraft": 1,
+      "warship": 3
+    },
+    "original_invalid_count": 0,
+    "final_invalid_count": 1,
+    "original_invalid": [],
+    "final_invalid": [
+      {
+        "track_id": "det_0007",
+        "scene": "sea",
+        "scene_cn": "海洋",
+        "target": "small_aircraft",
+        "target_cn": "小型飞机",
+        "confidence": 0.363525,
+        "reason": "目标类别与当前场景先验不匹配"
+      }
+    ],
+    "rule": "场景与目标类别按数据集真实组合做一致性检查；冲突会进入运行损失代理值。"
+  },
+  "decision": {
+    "detector_profile": "single_6class_sea_focus",
+    "confidence_threshold": 0.23,
+    "priority_classes": [
+      "patrol_boat",
+      "small_aircraft",
+      "warship"
+    ],
+    "route": "single",
+    "route_reason": "single_detector_model",
+    "enhancement": "keep horizontal ship texture and wake edges",
+    "expert_routing": {
+      "active_experts": [
+        "unknown_patrol_boat_expert",
+        "unknown_small_aircraft_expert",
+        "unknown_warship_expert",
+        "cross_modal_adapter"
+      ],
+      "adapter": "cross_modal_adapter",
+      "note": "部署侧记录专家选择建议；实际 NPU 推理由当前 OM 模型完成。"
+    },
+    "model_management": {
+      "edge_target": "Ascend 310B / 310B4",
+      "preferred_export": "ONNX -> ATC -> OM",
+      "load_strategy": "优先复用同尺寸同 SOC 的 .om 缓存文件。"
+    },
+    "description": "图像场景分类：海洋。检测到 8 个目标，包含 3 类：巡逻艇 4 个（置信度：0.71、0.67、0.51、0.30）；军舰/船舶 3 个（置信度：0.70、0.69、0.55）；小型飞机 1 个（置信度：0.36）。"
+  },
+  "losses": {
+    "type": "runtime_proxy",
+    "formula": "L = w_moti*L_moti + w_env*L_env + w_box*L_box + w_cls*L_cls + w_detail*L_detail + w_proto*L_proto",
+    "components": {
+      "L_moti": 0.66,
+      "L_env": 0.582739,
+      "L_box": 0.43869,
+      "L_cls": 0.43869,
+      "L_detail": 0.0,
+      "L_proto": 0.125
+    },
+    "weights": {
+      "modality": 0.3,
+      "scene": 0.6,
+      "box": 1.0,
+      "cls": 1.0,
+      "detail": 0.2,
+      "proto": 0.4
+    },
+    "total": 1.475023,
+    "note": "这是推理阶段的置信度/一致性代理损失；训练时仍以真实训练损失为准。"
+  },
+  "memory": {
+    "enabled": false,
+    "memory_path": ""
+  },
+  "warnings": [],
+  "stages": [
+    {
+      "name": "scene_classification",
+      "status": "inferred",
+      "seconds": 0.0,
+      "message": "unavailable",
+      "details": {
+        "scene": "uncertain",
+        "confidence": 0.25
+      }
+    },
+    {
+      "name": "target_detection",
+      "status": "ok",
+      "seconds": 0.56544,
+      "message": "8 target boxes",
+      "details": {
+        "route": "single",
+        "input_size": [
+          640,
+          640
+        ],
+        "output_count": 84000
+      }
+    },
+    {
+      "name": "scene_target_reasoning",
+      "status": "ok",
+      "seconds": 0.0,
+      "message": "scene-target consistency checked",
+      "details": {
+        "detection_count": 8
+      }
+    },
+    {
+      "name": "agent_report_formatting",
+      "status": "ok",
+      "seconds": 0.0,
+      "message": "Agent-compatible JSON and CSV output generated",
+      "details": {}
+    }
+  ],
+  "sparse_moe": {
+    "deployment_note": "若使用 class-il-yolo --sparse-moe 训练得到新 best.pt，请重新 export ONNX 后再由 ATC 转 OM。"
+  },
+  "source_prediction": {
+    "image": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/data/testdata/inc_test_r2/65.png",
+    "image_size": [
+      640,
+      512
+    ],
+    "detector": {
+      "route": "single",
+      "route_reason": "single_detector_model",
+      "elapsed_ms": 565.44,
+      "model_elapsed_ms": 23.944,
+      "input_size": [
+        640,
+        640
+      ],
+      "decode_mode": "raw",
+      "output_count": 84000
+    },
+    "detections": [
+      {
+        "box": [
+          590.5,
+          254.125,
+          605.5,
+          269.875
+        ],
+        "bbox_xywh": [
+          590.5,
+          254.125,
+          15.0,
+          15.75
+        ],
+        "score": 0.712891,
+        "class_id": 4,
+        "class_name": "patrol_boat",
+        "branch": "single"
+      },
+      {
+        "box": [
+          399.5,
+          171.188,
+          439.0,
+          200.812
+        ],
+        "bbox_xywh": [
+          399.5,
+          171.188,
+          39.5,
+          29.625
+        ],
+        "score": 0.699219,
+        "class_id": 2,
+        "class_name": "warship",
+        "branch": "single"
+      },
+      {
+        "box": [
+          288.375,
+          238.25,
+          351.625,
+          281.75
+        ],
+        "bbox_xywh": [
+          288.375,
+          238.25,
+          63.25,
+          43.5
+        ],
+        "score": 0.685059,
+        "class_id": 2,
+        "class_name": "warship",
+        "branch": "single"
+      },
+      {
+        "box": [
+          343.75,
+          377.25,
+          368.25,
+          400.75
+        ],
+        "bbox_xywh": [
+          343.75,
+          377.25,
+          24.5,
+          23.5
+        ],
+        "score": 0.67334,
+        "class_id": 4,
+        "class_name": "patrol_boat",
+        "branch": "single"
+      },
+      {
+        "box": [
+          99.125,
+          238.375,
+          180.375,
+          280.625
+        ],
+        "bbox_xywh": [
+          99.125,
+          238.375,
+          81.25,
+          42.25
+        ],
+        "score": 0.550781,
+        "class_id": 2,
+        "class_name": "warship",
+        "branch": "single"
+      },
+      {
+        "box": [
+          91.094,
+          351.875,
+          121.906,
+          374.125
+        ],
+        "bbox_xywh": [
+          91.094,
+          351.875,
+          30.812,
+          22.25
+        ],
+        "score": 0.508301,
+        "class_id": 4,
+        "class_name": "patrol_boat",
+        "branch": "single"
+      },
+      {
+        "box": [
+          91.0,
+          352.0,
+          121.875,
+          374.0
+        ],
+        "bbox_xywh": [
+          91.0,
+          352.0,
+          30.875,
+          22.0
+        ],
+        "score": 0.363525,
+        "class_id": 1,
+        "class_name": "small_aircraft",
+        "branch": "single"
+      },
+      {
+        "box": [
+          385.25,
+          149.562,
+          396.75,
+          159.938
+        ],
+        "bbox_xywh": [
+          385.25,
+          149.562,
+          11.5,
+          10.375
+        ],
+        "score": 0.297363,
+        "class_id": 4,
+        "class_name": "patrol_boat",
+        "branch": "single"
+      }
+    ]
+  }
+}

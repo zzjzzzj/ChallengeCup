@@ -1,0 +1,152 @@
+{
+  "protocol": "tzb_board_test_summary",
+  "requirements": {
+    "base_test": "Use before and after models to compute base mAP and KRR.",
+    "increment_test": "Use after model to compute New-mAP.",
+    "fps": "Measured on Ascend 310B hardware from NPU inference summary."
+  },
+  "old_classes": [
+    "soldier",
+    "small_aircraft",
+    "warship",
+    "tank"
+  ],
+  "new_classes": [
+    "patrol_boat",
+    "armored_vehicle"
+  ],
+  "base_before": null,
+  "base_after": null,
+  "increment_after": null,
+  "npu_fps": {
+    "available": true,
+    "mode": "single_6class",
+    "images": 270,
+    "avg_ms": 562.167,
+    "fps": 1.778831
+  },
+  "agent_summary": {
+    "images": 270,
+    "total_detections": 1369,
+    "class_counts": {
+      "armored_vehicle": 267,
+      "patrol_boat": 405,
+      "small_aircraft": 133,
+      "soldier": 89,
+      "tank": 160,
+      "warship": 315
+    },
+    "scene_counts": {
+      "air": 23,
+      "sea": 127,
+      "urban": 120
+    },
+    "modality_counts": {
+      "unknown": 270
+    },
+    "consistency_counts": {
+      "consistent": 213,
+      "invalid_combination": 57
+    },
+    "source_predictions": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/der500/increment_after/predictions.jsonl",
+    "source_summary": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/der500/increment_after/summary.json",
+    "source_inference_summary": {
+      "mode": "single_6class",
+      "images": 270,
+      "total_detections": 1369,
+      "class_counts": {
+        "armored_vehicle": 267,
+        "patrol_boat": 405,
+        "small_aircraft": 133,
+        "soldier": 89,
+        "tank": 160,
+        "warship": 315
+      },
+      "avg_detector_ms": 562.167,
+      "avg_detector_model_ms": 23.941,
+      "avg_end_to_end_ms": 562.167,
+      "fps": 1.779,
+      "pure_model_fps": 41.769,
+      "fps_definition": "single-detector per-image FPS = 1000 / average detector stage time; stage time includes image decode, preprocessing, NPU execution, output decoding and NMS, and excludes model loading plus file writing.",
+      "models": {
+        "single": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/exports/class-il-der500-stage06-best_640x640_640x640_Ascend310B4.om"
+      },
+      "class_names": {
+        "type": "list",
+        "items": 6
+      },
+      "confidence": 0.25,
+      "iou": 0.55,
+      "input_size": {
+        "type": "list",
+        "items": 2
+      },
+      "decode_mode": "auto",
+      "decode_modes": {
+        "raw": 270
+      },
+      "raw_layout": null,
+      "raw_box_format": null,
+      "raw_score_activation": null,
+      "predictions_jsonl": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/der500/increment_after/predictions.jsonl"
+    },
+    "report_dir": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/der500/increment_after/agent_reports/reports",
+    "batch_summary_csv": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/der500/increment_after/agent_reports/batch_summary.csv",
+    "memory": {
+      "memory_path": "",
+      "recent_records": 0,
+      "recent_reports": 0,
+      "recent_feedback": 0,
+      "scene_counts": {},
+      "modality_counts": {},
+      "target_counts": {}
+    }
+  },
+  "score_summary": {
+    "base_before_map50": {
+      "value": null,
+      "target": null,
+      "passed": null
+    },
+    "base_after_map50": {
+      "value": null,
+      "target": 0.8,
+      "passed": null
+    },
+    "krr_map50": {
+      "value": null,
+      "target": 0.95,
+      "passed": null
+    },
+    "new_map50": {
+      "value": null,
+      "target": 0.6,
+      "passed": null
+    },
+    "base_before_map50_95": {
+      "value": null,
+      "target": null,
+      "passed": null
+    },
+    "base_after_map50_95": {
+      "value": null,
+      "target": null,
+      "passed": null
+    },
+    "krr_map50_95": {
+      "value": null,
+      "target": null,
+      "passed": null
+    },
+    "new_map50_95": {
+      "value": null,
+      "target": null,
+      "passed": null
+    },
+    "fps": {
+      "value": 1.778831,
+      "target": 30.0,
+      "passed": false
+    }
+  }
+}

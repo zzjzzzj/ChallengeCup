@@ -1,0 +1,531 @@
+{
+  "image": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/data/testdata/base_test_r1/178.png",
+  "image_size": [
+    640,
+    512
+  ],
+  "input_modalities": {},
+  "modality": {
+    "label": "unknown",
+    "confidence": 0.34,
+    "probabilities": {
+      "visible": 0.34,
+      "ir": 0.33,
+      "sar": 0.33
+    },
+    "source": "unknown",
+    "details": {
+      "tokens": [
+        "home",
+        "hwhiaiuser",
+        "desktop",
+        "workspace",
+        "challengecup",
+        "data",
+        "testdata",
+        "base",
+        "test",
+        "r1",
+        "178",
+        "png"
+      ]
+    }
+  },
+  "scene": {
+    "label": "uncertain",
+    "confidence": 0.25,
+    "probabilities": {
+      "air": 0.25,
+      "sea": 0.25,
+      "urban": 0.25,
+      "forest": 0.25
+    },
+    "source": "unavailable",
+    "details": {}
+  },
+  "final_scene": {
+    "label": "urban",
+    "confidence": 0.3125,
+    "probabilities": {
+      "air": 0.1875,
+      "sea": 0.1875,
+      "urban": 0.3125,
+      "forest": 0.3125
+    },
+    "source": "scene_target_consistency_fusion",
+    "details": {
+      "raw_scene": "uncertain",
+      "target_vote": {
+        "air": 0.0,
+        "sea": 0.0,
+        "urban": 3.293945,
+        "forest": 3.293945
+      },
+      "invalid_after_fusion": 0
+    }
+  },
+  "environment": {
+    "source": "prediction_metadata",
+    "noise_level": "unknown",
+    "clarity_level": "unknown",
+    "target_count": 6,
+    "route": "single"
+  },
+  "preprocessing": {
+    "augmentation_plan": {
+      "status": "offline_dataset_augmentation",
+      "note": "训练数据增广由 run_augment_yolo.sh / run_full_pipeline.sh 完成，推理阶段不改写原图。"
+    },
+    "aligned_modalities": {}
+  },
+  "detections": [
+    {
+      "track_id": "det_0001",
+      "class_id": 3,
+      "class_name": "tank",
+      "label_cn": "坦克",
+      "confidence": 0.757324,
+      "bbox_xyxy": [
+        359.25,
+        388.5,
+        379.25,
+        416.0
+      ],
+      "bbox_xywh": [
+        359.25,
+        388.5,
+        20.0,
+        27.5
+      ],
+      "xyxy_norm": [
+        0.56132812,
+        0.75878906,
+        0.59257812,
+        0.8125
+      ],
+      "area": 550.0,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0002",
+      "class_id": 3,
+      "class_name": "tank",
+      "label_cn": "坦克",
+      "confidence": 0.712891,
+      "bbox_xyxy": [
+        347.5,
+        202.0,
+        368.0,
+        224.5
+      ],
+      "bbox_xywh": [
+        347.5,
+        202.0,
+        20.5,
+        22.5
+      ],
+      "xyxy_norm": [
+        0.54296875,
+        0.39453125,
+        0.575,
+        0.43847656
+      ],
+      "area": 461.25,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0003",
+      "class_id": 3,
+      "class_name": "tank",
+      "label_cn": "坦克",
+      "confidence": 0.679199,
+      "bbox_xyxy": [
+        264.25,
+        203.5,
+        287.75,
+        222.0
+      ],
+      "bbox_xywh": [
+        264.25,
+        203.5,
+        23.5,
+        18.5
+      ],
+      "xyxy_norm": [
+        0.41289063,
+        0.39746094,
+        0.44960937,
+        0.43359375
+      ],
+      "area": 434.75,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0004",
+      "class_id": 3,
+      "class_name": "tank",
+      "label_cn": "坦克",
+      "confidence": 0.500488,
+      "bbox_xyxy": [
+        135.375,
+        294.75,
+        148.375,
+        307.25
+      ],
+      "bbox_xywh": [
+        135.375,
+        294.75,
+        13.0,
+        12.5
+      ],
+      "xyxy_norm": [
+        0.21152344,
+        0.57568359,
+        0.23183594,
+        0.60009766
+      ],
+      "area": 162.5,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0005",
+      "class_id": 0,
+      "class_name": "soldier",
+      "label_cn": "士兵",
+      "confidence": 0.375488,
+      "bbox_xyxy": [
+        360.625,
+        234.375,
+        368.375,
+        242.625
+      ],
+      "bbox_xywh": [
+        360.625,
+        234.375,
+        7.75,
+        8.25
+      ],
+      "xyxy_norm": [
+        0.56347656,
+        0.45776367,
+        0.57558594,
+        0.47387695
+      ],
+      "area": 63.938,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0006",
+      "class_id": 3,
+      "class_name": "tank",
+      "label_cn": "坦克",
+      "confidence": 0.268555,
+      "bbox_xyxy": [
+        158.75,
+        127.438,
+        170.75,
+        141.062
+      ],
+      "bbox_xywh": [
+        158.75,
+        127.438,
+        12.0,
+        13.624
+      ],
+      "xyxy_norm": [
+        0.24804688,
+        0.24890234,
+        0.26679687,
+        0.27551172
+      ],
+      "area": 163.488,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    }
+  ],
+  "output_summary": {
+    "target_type_count": 2,
+    "target_total_count": 6,
+    "targets": [
+      {
+        "label": "tank",
+        "label_cn": "坦克",
+        "count": 5,
+        "max_confidence": 0.757324,
+        "mean_confidence": 0.583691,
+        "confidences": [
+          0.757324,
+          0.712891,
+          0.679199,
+          0.500488,
+          0.268555
+        ]
+      },
+      {
+        "label": "soldier",
+        "label_cn": "士兵",
+        "count": 1,
+        "max_confidence": 0.375488,
+        "mean_confidence": 0.375488,
+        "confidences": [
+          0.375488
+        ]
+      }
+    ],
+    "target_details": "坦克 5 个（置信度：0.76、0.71、0.68、0.50、0.27）；士兵 1 个（置信度：0.38）",
+    "max_confidence": 0.757324,
+    "mean_confidence": 0.548991,
+    "description": "图像场景分类：城市。检测到 6 个目标，包含 2 类：坦克 5 个（置信度：0.76、0.71、0.68、0.50、0.27）；士兵 1 个（置信度：0.38）。"
+  },
+  "consistency": {
+    "status": "consistent",
+    "target_counts": {
+      "soldier": 1,
+      "tank": 5
+    },
+    "original_invalid_count": 0,
+    "final_invalid_count": 0,
+    "original_invalid": [],
+    "final_invalid": [],
+    "rule": "场景与目标类别按数据集真实组合做一致性检查；冲突会进入运行损失代理值。"
+  },
+  "decision": {
+    "detector_profile": "single_6class_land_focus",
+    "confidence_threshold": 0.3,
+    "priority_classes": [
+      "armored_vehicle",
+      "soldier",
+      "tank"
+    ],
+    "route": "single",
+    "route_reason": "single_detector_model",
+    "enhancement": "keep small land targets and hard edges",
+    "expert_routing": {
+      "active_experts": [
+        "unknown_soldier_expert",
+        "unknown_tank_expert",
+        "cross_modal_adapter"
+      ],
+      "adapter": "cross_modal_adapter",
+      "note": "部署侧记录专家选择建议；实际 NPU 推理由当前 OM 模型完成。"
+    },
+    "model_management": {
+      "edge_target": "Ascend 310B / 310B4",
+      "preferred_export": "ONNX -> ATC -> OM",
+      "load_strategy": "优先复用同尺寸同 SOC 的 .om 缓存文件。"
+    },
+    "description": "图像场景分类：城市。检测到 6 个目标，包含 2 类：坦克 5 个（置信度：0.76、0.71、0.68、0.50、0.27）；士兵 1 个（置信度：0.38）。"
+  },
+  "losses": {
+    "type": "runtime_proxy",
+    "formula": "L = w_moti*L_moti + w_env*L_env + w_box*L_box + w_cls*L_cls + w_detail*L_detail + w_proto*L_proto",
+    "components": {
+      "L_moti": 0.66,
+      "L_env": 0.6875,
+      "L_box": 0.451009,
+      "L_cls": 0.451009,
+      "L_detail": 0.0,
+      "L_proto": 0.0
+    },
+    "weights": {
+      "modality": 0.3,
+      "scene": 0.6,
+      "box": 1.0,
+      "cls": 1.0,
+      "detail": 0.2,
+      "proto": 0.4
+    },
+    "total": 1.512518,
+    "note": "这是推理阶段的置信度/一致性代理损失；训练时仍以真实训练损失为准。"
+  },
+  "memory": {
+    "enabled": false,
+    "memory_path": ""
+  },
+  "warnings": [],
+  "stages": [
+    {
+      "name": "scene_classification",
+      "status": "inferred",
+      "seconds": 0.0,
+      "message": "unavailable",
+      "details": {
+        "scene": "uncertain",
+        "confidence": 0.25
+      }
+    },
+    {
+      "name": "target_detection",
+      "status": "ok",
+      "seconds": 0.560166,
+      "message": "6 target boxes",
+      "details": {
+        "route": "single",
+        "input_size": [
+          640,
+          640
+        ],
+        "output_count": 67200
+      }
+    },
+    {
+      "name": "scene_target_reasoning",
+      "status": "ok",
+      "seconds": 0.0,
+      "message": "scene-target consistency checked",
+      "details": {
+        "detection_count": 6
+      }
+    },
+    {
+      "name": "agent_report_formatting",
+      "status": "ok",
+      "seconds": 0.0,
+      "message": "Agent-compatible JSON and CSV output generated",
+      "details": {}
+    }
+  ],
+  "sparse_moe": {
+    "deployment_note": "若使用 class-il-yolo --sparse-moe 训练得到新 best.pt，请重新 export ONNX 后再由 ATC 转 OM。"
+  },
+  "source_prediction": {
+    "image": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/data/testdata/base_test_r1/178.png",
+    "image_size": [
+      640,
+      512
+    ],
+    "detector": {
+      "route": "single",
+      "route_reason": "single_detector_model",
+      "elapsed_ms": 560.166,
+      "model_elapsed_ms": 27.429,
+      "input_size": [
+        640,
+        640
+      ],
+      "decode_mode": "raw",
+      "output_count": 67200
+    },
+    "detections": [
+      {
+        "box": [
+          359.25,
+          388.5,
+          379.25,
+          416.0
+        ],
+        "bbox_xywh": [
+          359.25,
+          388.5,
+          20.0,
+          27.5
+        ],
+        "score": 0.757324,
+        "class_id": 3,
+        "class_name": "tank",
+        "branch": "single"
+      },
+      {
+        "box": [
+          347.5,
+          202.0,
+          368.0,
+          224.5
+        ],
+        "bbox_xywh": [
+          347.5,
+          202.0,
+          20.5,
+          22.5
+        ],
+        "score": 0.712891,
+        "class_id": 3,
+        "class_name": "tank",
+        "branch": "single"
+      },
+      {
+        "box": [
+          264.25,
+          203.5,
+          287.75,
+          222.0
+        ],
+        "bbox_xywh": [
+          264.25,
+          203.5,
+          23.5,
+          18.5
+        ],
+        "score": 0.679199,
+        "class_id": 3,
+        "class_name": "tank",
+        "branch": "single"
+      },
+      {
+        "box": [
+          135.375,
+          294.75,
+          148.375,
+          307.25
+        ],
+        "bbox_xywh": [
+          135.375,
+          294.75,
+          13.0,
+          12.5
+        ],
+        "score": 0.500488,
+        "class_id": 3,
+        "class_name": "tank",
+        "branch": "single"
+      },
+      {
+        "box": [
+          360.625,
+          234.375,
+          368.375,
+          242.625
+        ],
+        "bbox_xywh": [
+          360.625,
+          234.375,
+          7.75,
+          8.25
+        ],
+        "score": 0.375488,
+        "class_id": 0,
+        "class_name": "soldier",
+        "branch": "single"
+      },
+      {
+        "box": [
+          158.75,
+          127.438,
+          170.75,
+          141.062
+        ],
+        "bbox_xywh": [
+          158.75,
+          127.438,
+          12.0,
+          13.625
+        ],
+        "score": 0.268555,
+        "class_id": 3,
+        "class_name": "tank",
+        "branch": "single"
+      }
+    ]
+  }
+}

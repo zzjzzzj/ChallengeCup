@@ -13,6 +13,8 @@ deployment/ascend310bplus  # stable plus version
 deployment/ascend310bpro   # complete board-side version
 ```
 
+For the day-to-day command order, read `NORMAL_FLOW_USAGE.md`.
+
 ## What It Runs
 
 Default pro flow:
@@ -68,6 +70,22 @@ Check the runtime:
 
 ```bash
 bash deployment/ascend310bpro/check_env.sh
+```
+
+ATC/CANN on some Ascend images is not compatible with NumPy 2.x because CANN
+imports old NumPy aliases such as `np.float_`. The pro scripts automatically
+add `deployment/ascend310bpro/atc_compat/sitecustomize.py` to the ATC
+subprocess `PYTHONPATH` before ONNX-to-OM conversion. If ATC still reports
+`np.float_ was removed in the NumPy 2.0 release` or `No module named 'attr'`,
+use the environment fix:
+
+```bash
+python3 -m pip install -r deployment/ascend310bpro/requirements-runtime.txt
+```
+
+If you are running the routed three-ONNX package, also check:
+
+```bash
 bash deployment/ascend310bpro/check_models.sh --soc-version Ascend310B4
 bash deployment/ascend310bpro/run_model_manifest.sh verify
 ```
@@ -111,6 +129,26 @@ outputs/ascend310bpro_full/agent_memory.jsonl
 ```
 
 ## Only Run Inference
+
+For a live single-image demo, use the release ER/DER checkpoint wrapper:
+
+```bash
+cd ~/Desktop/workspace/ChallengeCup
+conda activate cc_env
+
+bash deployment/ascend310bpro/run_single_image_demo.sh \
+  --image data/testdata/base_test_r1/example.jpg \
+  --strategy er500 \
+  --soc-version Ascend310B4
+```
+
+Use `--strategy der500` to demonstrate the DER increment model, or
+`--strategy base` to demonstrate the before-increment four-class model. The
+annotated image is written to:
+
+```text
+outputs/ascend310bpro_demo/<strategy>/images/<input-name>.jpg
+```
 
 If augmentation already exists:
 
@@ -321,6 +359,38 @@ base test set: before-model and after-model mAP, then KRR
 increment test set: after-model New-mAP
 FPS: measured on Ascend 310B and submitted with evidence
 ```
+
+For the current release weight list, run both increment strategies on the
+Ascend board:
+
+```bash
+cd ~/Desktop/workspace/ChallengeCup
+conda activate cc_env
+
+bash deployment/ascend310bpro/run_release_weight_tzb_tests.sh \
+  --soc-version Ascend310B4 \
+  --team-id 作品编号 \
+  --no-save-images
+```
+
+It uses:
+
+```text
+before/base: deployment/ascend310bpro/models/r1-four-class-detector-easy-640.pt
+after ER500 : deployment/ascend310bpro/models/class-il-er500-stage06-best.pt
+after DER500: deployment/ascend310bpro/models/class-il-der500-stage06-best.pt
+```
+
+The script exports `.pt` checkpoints to cached ONNX files, converts/reuses OM
+files, runs NPU inference, and writes the attachment-1 TXT folders:
+
+```text
+outputs/ascend310bpro_release_tzb/er500/作品编号_FPS指标<自动取整FPS>/
+outputs/ascend310bpro_release_tzb/der500/作品编号_FPS指标<自动取整FPS>/
+```
+
+If you want to force the folder number, rerun with `--fps-label-er 30` and
+`--fps-label-der 30`.
 
 When you have the two `.pt` checkpoints and the fixed test YAML files:
 

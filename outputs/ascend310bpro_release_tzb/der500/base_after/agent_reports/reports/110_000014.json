@@ -1,0 +1,664 @@
+{
+  "image": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/data/testdata/base_test_r1/110.png",
+  "image_size": [
+    640,
+    512
+  ],
+  "input_modalities": {},
+  "modality": {
+    "label": "unknown",
+    "confidence": 0.34,
+    "probabilities": {
+      "visible": 0.34,
+      "ir": 0.33,
+      "sar": 0.33
+    },
+    "source": "unknown",
+    "details": {
+      "tokens": [
+        "home",
+        "hwhiaiuser",
+        "desktop",
+        "workspace",
+        "challengecup",
+        "data",
+        "testdata",
+        "base",
+        "test",
+        "r1",
+        "110",
+        "png"
+      ]
+    }
+  },
+  "scene": {
+    "label": "uncertain",
+    "confidence": 0.25,
+    "probabilities": {
+      "air": 0.25,
+      "sea": 0.25,
+      "urban": 0.25,
+      "forest": 0.25
+    },
+    "source": "unavailable",
+    "details": {}
+  },
+  "final_scene": {
+    "label": "urban",
+    "confidence": 0.3125,
+    "probabilities": {
+      "air": 0.1875,
+      "sea": 0.1875,
+      "urban": 0.3125,
+      "forest": 0.3125
+    },
+    "source": "scene_target_consistency_fusion",
+    "details": {
+      "raw_scene": "uncertain",
+      "target_vote": {
+        "air": 0.0,
+        "sea": 0.0,
+        "urban": 4.277344,
+        "forest": 4.277344
+      },
+      "invalid_after_fusion": 0
+    }
+  },
+  "environment": {
+    "source": "prediction_metadata",
+    "noise_level": "unknown",
+    "clarity_level": "unknown",
+    "target_count": 9,
+    "route": "single"
+  },
+  "preprocessing": {
+    "augmentation_plan": {
+      "status": "offline_dataset_augmentation",
+      "note": "训练数据增广由 run_augment_yolo.sh / run_full_pipeline.sh 完成，推理阶段不改写原图。"
+    },
+    "aligned_modalities": {}
+  },
+  "detections": [
+    {
+      "track_id": "det_0001",
+      "class_id": 5,
+      "class_name": "armored_vehicle",
+      "label_cn": "装甲车辆",
+      "confidence": 0.649902,
+      "bbox_xyxy": [
+        192.188,
+        384.125,
+        208.312,
+        398.875
+      ],
+      "bbox_xywh": [
+        192.188,
+        384.125,
+        16.124,
+        14.75
+      ],
+      "xyxy_norm": [
+        0.30029375,
+        0.75024414,
+        0.3254875,
+        0.77905273
+      ],
+      "area": 237.829,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0002",
+      "class_id": 5,
+      "class_name": "armored_vehicle",
+      "label_cn": "装甲车辆",
+      "confidence": 0.634277,
+      "bbox_xyxy": [
+        285.875,
+        377.0,
+        302.125,
+        390.0
+      ],
+      "bbox_xywh": [
+        285.875,
+        377.0,
+        16.25,
+        13.0
+      ],
+      "xyxy_norm": [
+        0.44667969,
+        0.73632812,
+        0.47207031,
+        0.76171875
+      ],
+      "area": 211.25,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0003",
+      "class_id": 5,
+      "class_name": "armored_vehicle",
+      "label_cn": "装甲车辆",
+      "confidence": 0.604492,
+      "bbox_xyxy": [
+        71.719,
+        272.125,
+        86.531,
+        283.875
+      ],
+      "bbox_xywh": [
+        71.719,
+        272.125,
+        14.812,
+        11.75
+      ],
+      "xyxy_norm": [
+        0.11206094,
+        0.53149414,
+        0.13520469,
+        0.55444336
+      ],
+      "area": 174.041,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0004",
+      "class_id": 5,
+      "class_name": "armored_vehicle",
+      "label_cn": "装甲车辆",
+      "confidence": 0.554688,
+      "bbox_xyxy": [
+        431.5,
+        103.688,
+        447.0,
+        118.312
+      ],
+      "bbox_xywh": [
+        431.5,
+        103.688,
+        15.5,
+        14.624
+      ],
+      "xyxy_norm": [
+        0.67421875,
+        0.20251563,
+        0.6984375,
+        0.23107812
+      ],
+      "area": 226.672,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0005",
+      "class_id": 5,
+      "class_name": "armored_vehicle",
+      "label_cn": "装甲车辆",
+      "confidence": 0.450684,
+      "bbox_xyxy": [
+        151.875,
+        134.75,
+        180.125,
+        163.0
+      ],
+      "bbox_xywh": [
+        151.875,
+        134.75,
+        28.25,
+        28.25
+      ],
+      "xyxy_norm": [
+        0.23730469,
+        0.26318359,
+        0.28144531,
+        0.31835938
+      ],
+      "area": 798.062,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0006",
+      "class_id": 5,
+      "class_name": "armored_vehicle",
+      "label_cn": "装甲车辆",
+      "confidence": 0.391357,
+      "bbox_xyxy": [
+        67.438,
+        255.5,
+        81.812,
+        266.5
+      ],
+      "bbox_xywh": [
+        67.438,
+        255.5,
+        14.374,
+        11.0
+      ],
+      "xyxy_norm": [
+        0.10537188,
+        0.49902344,
+        0.12783125,
+        0.52050781
+      ],
+      "area": 158.114,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0007",
+      "class_id": 5,
+      "class_name": "armored_vehicle",
+      "label_cn": "装甲车辆",
+      "confidence": 0.379395,
+      "bbox_xyxy": [
+        67.875,
+        257.375,
+        84.75,
+        272.625
+      ],
+      "bbox_xywh": [
+        67.875,
+        257.375,
+        16.875,
+        15.25
+      ],
+      "xyxy_norm": [
+        0.10605469,
+        0.50268555,
+        0.13242187,
+        0.5324707
+      ],
+      "area": 257.344,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0008",
+      "class_id": 5,
+      "class_name": "armored_vehicle",
+      "label_cn": "装甲车辆",
+      "confidence": 0.307617,
+      "bbox_xyxy": [
+        450.75,
+        372.0,
+        471.75,
+        392.0
+      ],
+      "bbox_xywh": [
+        450.75,
+        372.0,
+        21.0,
+        20.0
+      ],
+      "xyxy_norm": [
+        0.70429688,
+        0.7265625,
+        0.73710937,
+        0.765625
+      ],
+      "area": 420.0,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0009",
+      "class_id": 5,
+      "class_name": "armored_vehicle",
+      "label_cn": "装甲车辆",
+      "confidence": 0.304932,
+      "bbox_xyxy": [
+        186.625,
+        362.875,
+        203.875,
+        377.125
+      ],
+      "bbox_xywh": [
+        186.625,
+        362.875,
+        17.25,
+        14.25
+      ],
+      "xyxy_norm": [
+        0.29160156,
+        0.70874023,
+        0.31855469,
+        0.73657227
+      ],
+      "area": 245.812,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    }
+  ],
+  "output_summary": {
+    "target_type_count": 1,
+    "target_total_count": 9,
+    "targets": [
+      {
+        "label": "armored_vehicle",
+        "label_cn": "装甲车辆",
+        "count": 9,
+        "max_confidence": 0.649902,
+        "mean_confidence": 0.47526,
+        "confidences": [
+          0.649902,
+          0.634277,
+          0.604492,
+          0.554688,
+          0.450684,
+          0.391357,
+          0.379395,
+          0.307617,
+          0.304932
+        ]
+      }
+    ],
+    "target_details": "装甲车辆 9 个（置信度：0.65、0.63、0.60、0.55、0.45）",
+    "max_confidence": 0.649902,
+    "mean_confidence": 0.47526,
+    "description": "图像场景分类：城市。检测到 9 个目标，包含 1 类：装甲车辆 9 个（置信度：0.65、0.63、0.60、0.55、0.45）。"
+  },
+  "consistency": {
+    "status": "consistent",
+    "target_counts": {
+      "armored_vehicle": 9
+    },
+    "original_invalid_count": 0,
+    "final_invalid_count": 0,
+    "original_invalid": [],
+    "final_invalid": [],
+    "rule": "场景与目标类别按数据集真实组合做一致性检查；冲突会进入运行损失代理值。"
+  },
+  "decision": {
+    "detector_profile": "single_6class_land_focus",
+    "confidence_threshold": 0.3,
+    "priority_classes": [
+      "armored_vehicle",
+      "soldier",
+      "tank"
+    ],
+    "route": "single",
+    "route_reason": "single_detector_model",
+    "enhancement": "keep small land targets and hard edges",
+    "expert_routing": {
+      "active_experts": [
+        "unknown_armored_vehicle_expert",
+        "cross_modal_adapter"
+      ],
+      "adapter": "cross_modal_adapter",
+      "note": "部署侧记录专家选择建议；实际 NPU 推理由当前 OM 模型完成。"
+    },
+    "model_management": {
+      "edge_target": "Ascend 310B / 310B4",
+      "preferred_export": "ONNX -> ATC -> OM",
+      "load_strategy": "优先复用同尺寸同 SOC 的 .om 缓存文件。"
+    },
+    "description": "图像场景分类：城市。检测到 9 个目标，包含 1 类：装甲车辆 9 个（置信度：0.65、0.63、0.60、0.55、0.45）。"
+  },
+  "losses": {
+    "type": "runtime_proxy",
+    "formula": "L = w_moti*L_moti + w_env*L_env + w_box*L_box + w_cls*L_cls + w_detail*L_detail + w_proto*L_proto",
+    "components": {
+      "L_moti": 0.66,
+      "L_env": 0.6875,
+      "L_box": 0.52474,
+      "L_cls": 0.52474,
+      "L_detail": 0.0,
+      "L_proto": 0.0
+    },
+    "weights": {
+      "modality": 0.3,
+      "scene": 0.6,
+      "box": 1.0,
+      "cls": 1.0,
+      "detail": 0.2,
+      "proto": 0.4
+    },
+    "total": 1.65998,
+    "note": "这是推理阶段的置信度/一致性代理损失；训练时仍以真实训练损失为准。"
+  },
+  "memory": {
+    "enabled": false,
+    "memory_path": ""
+  },
+  "warnings": [],
+  "stages": [
+    {
+      "name": "scene_classification",
+      "status": "inferred",
+      "seconds": 0.0,
+      "message": "unavailable",
+      "details": {
+        "scene": "uncertain",
+        "confidence": 0.25
+      }
+    },
+    {
+      "name": "target_detection",
+      "status": "ok",
+      "seconds": 0.561075,
+      "message": "9 target boxes",
+      "details": {
+        "route": "single",
+        "input_size": [
+          640,
+          640
+        ],
+        "output_count": 84000
+      }
+    },
+    {
+      "name": "scene_target_reasoning",
+      "status": "ok",
+      "seconds": 0.0,
+      "message": "scene-target consistency checked",
+      "details": {
+        "detection_count": 9
+      }
+    },
+    {
+      "name": "agent_report_formatting",
+      "status": "ok",
+      "seconds": 0.0,
+      "message": "Agent-compatible JSON and CSV output generated",
+      "details": {}
+    }
+  ],
+  "sparse_moe": {
+    "deployment_note": "若使用 class-il-yolo --sparse-moe 训练得到新 best.pt，请重新 export ONNX 后再由 ATC 转 OM。"
+  },
+  "source_prediction": {
+    "image": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/data/testdata/base_test_r1/110.png",
+    "image_size": [
+      640,
+      512
+    ],
+    "detector": {
+      "route": "single",
+      "route_reason": "single_detector_model",
+      "elapsed_ms": 561.075,
+      "model_elapsed_ms": 23.393,
+      "input_size": [
+        640,
+        640
+      ],
+      "decode_mode": "raw",
+      "output_count": 84000
+    },
+    "detections": [
+      {
+        "box": [
+          192.188,
+          384.125,
+          208.312,
+          398.875
+        ],
+        "bbox_xywh": [
+          192.188,
+          384.125,
+          16.125,
+          14.75
+        ],
+        "score": 0.649902,
+        "class_id": 5,
+        "class_name": "armored_vehicle",
+        "branch": "single"
+      },
+      {
+        "box": [
+          285.875,
+          377.0,
+          302.125,
+          390.0
+        ],
+        "bbox_xywh": [
+          285.875,
+          377.0,
+          16.25,
+          13.0
+        ],
+        "score": 0.634277,
+        "class_id": 5,
+        "class_name": "armored_vehicle",
+        "branch": "single"
+      },
+      {
+        "box": [
+          71.719,
+          272.125,
+          86.531,
+          283.875
+        ],
+        "bbox_xywh": [
+          71.719,
+          272.125,
+          14.812,
+          11.75
+        ],
+        "score": 0.604492,
+        "class_id": 5,
+        "class_name": "armored_vehicle",
+        "branch": "single"
+      },
+      {
+        "box": [
+          431.5,
+          103.688,
+          447.0,
+          118.312
+        ],
+        "bbox_xywh": [
+          431.5,
+          103.688,
+          15.5,
+          14.625
+        ],
+        "score": 0.554688,
+        "class_id": 5,
+        "class_name": "armored_vehicle",
+        "branch": "single"
+      },
+      {
+        "box": [
+          151.875,
+          134.75,
+          180.125,
+          163.0
+        ],
+        "bbox_xywh": [
+          151.875,
+          134.75,
+          28.25,
+          28.25
+        ],
+        "score": 0.450684,
+        "class_id": 5,
+        "class_name": "armored_vehicle",
+        "branch": "single"
+      },
+      {
+        "box": [
+          67.438,
+          255.5,
+          81.812,
+          266.5
+        ],
+        "bbox_xywh": [
+          67.438,
+          255.5,
+          14.375,
+          11.0
+        ],
+        "score": 0.391357,
+        "class_id": 5,
+        "class_name": "armored_vehicle",
+        "branch": "single"
+      },
+      {
+        "box": [
+          67.875,
+          257.375,
+          84.75,
+          272.625
+        ],
+        "bbox_xywh": [
+          67.875,
+          257.375,
+          16.875,
+          15.25
+        ],
+        "score": 0.379395,
+        "class_id": 5,
+        "class_name": "armored_vehicle",
+        "branch": "single"
+      },
+      {
+        "box": [
+          450.75,
+          372.0,
+          471.75,
+          392.0
+        ],
+        "bbox_xywh": [
+          450.75,
+          372.0,
+          21.0,
+          20.0
+        ],
+        "score": 0.307617,
+        "class_id": 5,
+        "class_name": "armored_vehicle",
+        "branch": "single"
+      },
+      {
+        "box": [
+          186.625,
+          362.875,
+          203.875,
+          377.125
+        ],
+        "bbox_xywh": [
+          186.625,
+          362.875,
+          17.25,
+          14.25
+        ],
+        "score": 0.304932,
+        "class_id": 5,
+        "class_name": "armored_vehicle",
+        "branch": "single"
+      }
+    ]
+  }
+}

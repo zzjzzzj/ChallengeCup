@@ -1,0 +1,4 @@
+route single
+reason single_detector_model
+input_size [640, 640]
+elapsed_ms 560.954

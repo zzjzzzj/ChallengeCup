@@ -1,0 +1,453 @@
+{
+  "image": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/data/testdata/base_test_r1/17.png",
+  "image_size": [
+    640,
+    512
+  ],
+  "input_modalities": {},
+  "modality": {
+    "label": "unknown",
+    "confidence": 0.34,
+    "probabilities": {
+      "visible": 0.34,
+      "ir": 0.33,
+      "sar": 0.33
+    },
+    "source": "unknown",
+    "details": {
+      "tokens": [
+        "home",
+        "hwhiaiuser",
+        "desktop",
+        "workspace",
+        "challengecup",
+        "data",
+        "testdata",
+        "base",
+        "test",
+        "r1",
+        "17",
+        "png"
+      ]
+    }
+  },
+  "scene": {
+    "label": "uncertain",
+    "confidence": 0.25,
+    "probabilities": {
+      "air": 0.25,
+      "sea": 0.25,
+      "urban": 0.25,
+      "forest": 0.25
+    },
+    "source": "unavailable",
+    "details": {}
+  },
+  "final_scene": {
+    "label": "air",
+    "confidence": 0.3253,
+    "probabilities": {
+      "air": 0.3253,
+      "sea": 0.2997,
+      "urban": 0.1875,
+      "forest": 0.1875
+    },
+    "source": "scene_target_consistency_fusion",
+    "details": {
+      "raw_scene": "uncertain",
+      "target_vote": {
+        "air": 1.435058,
+        "sea": 1.168457,
+        "urban": 0.0,
+        "forest": 0.0
+      },
+      "invalid_after_fusion": 2
+    }
+  },
+  "environment": {
+    "source": "prediction_metadata",
+    "noise_level": "unknown",
+    "clarity_level": "unknown",
+    "target_count": 4,
+    "route": "single"
+  },
+  "preprocessing": {
+    "augmentation_plan": {
+      "status": "offline_dataset_augmentation",
+      "note": "训练数据增广由 run_augment_yolo.sh / run_full_pipeline.sh 完成，推理阶段不改写原图。"
+    },
+    "aligned_modalities": {}
+  },
+  "detections": [
+    {
+      "track_id": "det_0001",
+      "class_id": 1,
+      "class_name": "small_aircraft",
+      "label_cn": "小型飞机",
+      "confidence": 0.724609,
+      "bbox_xyxy": [
+        282.75,
+        244.75,
+        357.75,
+        270.25
+      ],
+      "bbox_xywh": [
+        282.75,
+        244.75,
+        75.0,
+        25.5
+      ],
+      "xyxy_norm": [
+        0.44179687,
+        0.47802734,
+        0.55898437,
+        0.52783203
+      ],
+      "area": 1912.5,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0002",
+      "class_id": 1,
+      "class_name": "small_aircraft",
+      "label_cn": "小型飞机",
+      "confidence": 0.710449,
+      "bbox_xyxy": [
+        282.375,
+        187.625,
+        340.625,
+        211.375
+      ],
+      "bbox_xywh": [
+        282.375,
+        187.625,
+        58.25,
+        23.75
+      ],
+      "xyxy_norm": [
+        0.44121094,
+        0.36645508,
+        0.53222656,
+        0.4128418
+      ],
+      "area": 1383.438,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0003",
+      "class_id": 2,
+      "class_name": "warship",
+      "label_cn": "军舰/船舶",
+      "confidence": 0.662109,
+      "bbox_xyxy": [
+        281.375,
+        187.062,
+        339.625,
+        212.438
+      ],
+      "bbox_xywh": [
+        281.375,
+        187.062,
+        58.25,
+        25.376
+      ],
+      "xyxy_norm": [
+        0.43964844,
+        0.36535547,
+        0.53066406,
+        0.41491797
+      ],
+      "area": 1478.152,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0004",
+      "class_id": 2,
+      "class_name": "warship",
+      "label_cn": "军舰/船舶",
+      "confidence": 0.506348,
+      "bbox_xyxy": [
+        282.125,
+        243.25,
+        356.875,
+        271.25
+      ],
+      "bbox_xywh": [
+        282.125,
+        243.25,
+        74.75,
+        28.0
+      ],
+      "xyxy_norm": [
+        0.44082031,
+        0.47509766,
+        0.55761719,
+        0.52978516
+      ],
+      "area": 2093.0,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    }
+  ],
+  "output_summary": {
+    "target_type_count": 2,
+    "target_total_count": 4,
+    "targets": [
+      {
+        "label": "small_aircraft",
+        "label_cn": "小型飞机",
+        "count": 2,
+        "max_confidence": 0.724609,
+        "mean_confidence": 0.717529,
+        "confidences": [
+          0.724609,
+          0.710449
+        ]
+      },
+      {
+        "label": "warship",
+        "label_cn": "军舰/船舶",
+        "count": 2,
+        "max_confidence": 0.662109,
+        "mean_confidence": 0.584229,
+        "confidences": [
+          0.662109,
+          0.506348
+        ]
+      }
+    ],
+    "target_details": "小型飞机 2 个（置信度：0.72、0.71）；军舰/船舶 2 个（置信度：0.66、0.51）",
+    "max_confidence": 0.724609,
+    "mean_confidence": 0.650879,
+    "description": "图像场景分类：天空。检测到 4 个目标，包含 2 类：小型飞机 2 个（置信度：0.72、0.71）；军舰/船舶 2 个（置信度：0.66、0.51）。"
+  },
+  "consistency": {
+    "status": "invalid_combination",
+    "target_counts": {
+      "small_aircraft": 2,
+      "warship": 2
+    },
+    "original_invalid_count": 0,
+    "final_invalid_count": 2,
+    "original_invalid": [],
+    "final_invalid": [
+      {
+        "track_id": "det_0003",
+        "scene": "air",
+        "scene_cn": "天空",
+        "target": "warship",
+        "target_cn": "军舰/船舶",
+        "confidence": 0.662109,
+        "reason": "目标类别与当前场景先验不匹配"
+      },
+      {
+        "track_id": "det_0004",
+        "scene": "air",
+        "scene_cn": "天空",
+        "target": "warship",
+        "target_cn": "军舰/船舶",
+        "confidence": 0.506348,
+        "reason": "目标类别与当前场景先验不匹配"
+      }
+    ],
+    "rule": "场景与目标类别按数据集真实组合做一致性检查；冲突会进入运行损失代理值。"
+  },
+  "decision": {
+    "detector_profile": "single_6class_air_focus",
+    "confidence_threshold": 0.25,
+    "priority_classes": [
+      "small_aircraft",
+      "warship"
+    ],
+    "route": "single",
+    "route_reason": "single_detector_model",
+    "enhancement": "keep small high-contrast flying targets",
+    "expert_routing": {
+      "active_experts": [
+        "unknown_small_aircraft_expert",
+        "unknown_warship_expert",
+        "cross_modal_adapter"
+      ],
+      "adapter": "cross_modal_adapter",
+      "note": "部署侧记录专家选择建议；实际 NPU 推理由当前 OM 模型完成。"
+    },
+    "model_management": {
+      "edge_target": "Ascend 310B / 310B4",
+      "preferred_export": "ONNX -> ATC -> OM",
+      "load_strategy": "优先复用同尺寸同 SOC 的 .om 缓存文件。"
+    },
+    "description": "图像场景分类：天空。检测到 4 个目标，包含 2 类：小型飞机 2 个（置信度：0.72、0.71）；军舰/船舶 2 个（置信度：0.66、0.51）。"
+  },
+  "losses": {
+    "type": "runtime_proxy",
+    "formula": "L = w_moti*L_moti + w_env*L_env + w_box*L_box + w_cls*L_cls + w_detail*L_detail + w_proto*L_proto",
+    "components": {
+      "L_moti": 0.66,
+      "L_env": 0.6747,
+      "L_box": 0.349121,
+      "L_cls": 0.349121,
+      "L_detail": 0.0,
+      "L_proto": 0.5
+    },
+    "weights": {
+      "modality": 0.3,
+      "scene": 0.6,
+      "box": 1.0,
+      "cls": 1.0,
+      "detail": 0.2,
+      "proto": 0.4
+    },
+    "total": 1.501062,
+    "note": "这是推理阶段的置信度/一致性代理损失；训练时仍以真实训练损失为准。"
+  },
+  "memory": {
+    "enabled": false,
+    "memory_path": ""
+  },
+  "warnings": [],
+  "stages": [
+    {
+      "name": "scene_classification",
+      "status": "inferred",
+      "seconds": 0.0,
+      "message": "unavailable",
+      "details": {
+        "scene": "uncertain",
+        "confidence": 0.25
+      }
+    },
+    {
+      "name": "target_detection",
+      "status": "ok",
+      "seconds": 0.560171,
+      "message": "4 target boxes",
+      "details": {
+        "route": "single",
+        "input_size": [
+          640,
+          640
+        ],
+        "output_count": 84000
+      }
+    },
+    {
+      "name": "scene_target_reasoning",
+      "status": "ok",
+      "seconds": 0.0,
+      "message": "scene-target consistency checked",
+      "details": {
+        "detection_count": 4
+      }
+    },
+    {
+      "name": "agent_report_formatting",
+      "status": "ok",
+      "seconds": 0.0,
+      "message": "Agent-compatible JSON and CSV output generated",
+      "details": {}
+    }
+  ],
+  "sparse_moe": {
+    "deployment_note": "若使用 class-il-yolo --sparse-moe 训练得到新 best.pt，请重新 export ONNX 后再由 ATC 转 OM。"
+  },
+  "source_prediction": {
+    "image": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/data/testdata/base_test_r1/17.png",
+    "image_size": [
+      640,
+      512
+    ],
+    "detector": {
+      "route": "single",
+      "route_reason": "single_detector_model",
+      "elapsed_ms": 560.171,
+      "model_elapsed_ms": 24.147,
+      "input_size": [
+        640,
+        640
+      ],
+      "decode_mode": "raw",
+      "output_count": 84000
+    },
+    "detections": [
+      {
+        "box": [
+          282.75,
+          244.75,
+          357.75,
+          270.25
+        ],
+        "bbox_xywh": [
+          282.75,
+          244.75,
+          75.0,
+          25.5
+        ],
+        "score": 0.724609,
+        "class_id": 1,
+        "class_name": "small_aircraft",
+        "branch": "single"
+      },
+      {
+        "box": [
+          282.375,
+          187.625,
+          340.625,
+          211.375
+        ],
+        "bbox_xywh": [
+          282.375,
+          187.625,
+          58.25,
+          23.75
+        ],
+        "score": 0.710449,
+        "class_id": 1,
+        "class_name": "small_aircraft",
+        "branch": "single"
+      },
+      {
+        "box": [
+          281.375,
+          187.062,
+          339.625,
+          212.438
+        ],
+        "bbox_xywh": [
+          281.375,
+          187.062,
+          58.25,
+          25.375
+        ],
+        "score": 0.662109,
+        "class_id": 2,
+        "class_name": "warship",
+        "branch": "single"
+      },
+      {
+        "box": [
+          282.125,
+          243.25,
+          356.875,
+          271.25
+        ],
+        "bbox_xywh": [
+          282.125,
+          243.25,
+          74.75,
+          28.0
+        ],
+        "score": 0.506348,
+        "class_id": 2,
+        "class_name": "warship",
+        "branch": "single"
+      }
+    ]
+  }
+}

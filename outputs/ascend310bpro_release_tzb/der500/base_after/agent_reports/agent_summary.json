@@ -1,0 +1,78 @@
+{
+  "images": 240,
+  "total_detections": 948,
+  "class_counts": {
+    "armored_vehicle": 273,
+    "patrol_boat": 69,
+    "small_aircraft": 75,
+    "soldier": 127,
+    "tank": 280,
+    "warship": 124
+  },
+  "scene_counts": {
+    "air": 13,
+    "sea": 51,
+    "uncertain": 5,
+    "urban": 171
+  },
+  "modality_counts": {
+    "unknown": 240
+  },
+  "consistency_counts": {
+    "consistent": 198,
+    "invalid_combination": 42
+  },
+  "source_predictions": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/der500/base_after/predictions.jsonl",
+  "source_summary": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/der500/base_after/summary.json",
+  "source_inference_summary": {
+    "mode": "single_6class",
+    "images": 240,
+    "total_detections": 948,
+    "class_counts": {
+      "armored_vehicle": 273,
+      "patrol_boat": 69,
+      "small_aircraft": 75,
+      "soldier": 127,
+      "tank": 280,
+      "warship": 124
+    },
+    "avg_detector_ms": 555.743,
+    "avg_detector_model_ms": 24.008,
+    "avg_end_to_end_ms": 555.743,
+    "fps": 1.799,
+    "pure_model_fps": 41.652,
+    "fps_definition": "single-detector per-image FPS = 1000 / average detector stage time; stage time includes image decode, preprocessing, NPU execution, output decoding and NMS, and excludes model loading plus file writing.",
+    "models": {
+      "single": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/exports/class-il-der500-stage06-best_640x640_640x640_Ascend310B4.om"
+    },
+    "class_names": {
+      "type": "list",
+      "items": 6
+    },
+    "confidence": 0.25,
+    "iou": 0.55,
+    "input_size": {
+      "type": "list",
+      "items": 2
+    },
+    "decode_mode": "auto",
+    "decode_modes": {
+      "raw": 240
+    },
+    "raw_layout": null,
+    "raw_box_format": null,
+    "raw_score_activation": null,
+    "predictions_jsonl": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/der500/base_after/predictions.jsonl"
+  },
+  "report_dir": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/der500/base_after/agent_reports/reports",
+  "batch_summary_csv": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/der500/base_after/agent_reports/batch_summary.csv",
+  "memory": {
+    "memory_path": "",
+    "recent_records": 0,
+    "recent_reports": 0,
+    "recent_feedback": 0,
+    "scene_counts": {},
+    "modality_counts": {},
+    "target_counts": {}
+  }
+}

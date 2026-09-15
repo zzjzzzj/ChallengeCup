@@ -1,0 +1,2 @@
+strategy er500
+fps 1.751

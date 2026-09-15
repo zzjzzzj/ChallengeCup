@@ -1,0 +1,470 @@
+{
+  "image": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/data/testdata/base_test_r1/176.png",
+  "image_size": [
+    640,
+    512
+  ],
+  "input_modalities": {},
+  "modality": {
+    "label": "unknown",
+    "confidence": 0.34,
+    "probabilities": {
+      "visible": 0.34,
+      "ir": 0.33,
+      "sar": 0.33
+    },
+    "source": "unknown",
+    "details": {
+      "tokens": [
+        "home",
+        "hwhiaiuser",
+        "desktop",
+        "workspace",
+        "challengecup",
+        "data",
+        "testdata",
+        "base",
+        "test",
+        "r1",
+        "176",
+        "png"
+      ]
+    }
+  },
+  "scene": {
+    "label": "uncertain",
+    "confidence": 0.25,
+    "probabilities": {
+      "air": 0.25,
+      "sea": 0.25,
+      "urban": 0.25,
+      "forest": 0.25
+    },
+    "source": "unavailable",
+    "details": {}
+  },
+  "final_scene": {
+    "label": "air",
+    "confidence": 0.4375,
+    "probabilities": {
+      "air": 0.4375,
+      "sea": 0.1875,
+      "urban": 0.1875,
+      "forest": 0.1875
+    },
+    "source": "scene_target_consistency_fusion",
+    "details": {
+      "raw_scene": "uncertain",
+      "target_vote": {
+        "air": 3.286621,
+        "sea": 0.0,
+        "urban": 0.0,
+        "forest": 0.0
+      },
+      "invalid_after_fusion": 0
+    }
+  },
+  "environment": {
+    "source": "prediction_metadata",
+    "noise_level": "unknown",
+    "clarity_level": "unknown",
+    "target_count": 5,
+    "route": "single"
+  },
+  "preprocessing": {
+    "augmentation_plan": {
+      "status": "offline_dataset_augmentation",
+      "note": "训练数据增广由 run_augment_yolo.sh / run_full_pipeline.sh 完成，推理阶段不改写原图。"
+    },
+    "aligned_modalities": {}
+  },
+  "detections": [
+    {
+      "track_id": "det_0001",
+      "class_id": 1,
+      "class_name": "small_aircraft",
+      "label_cn": "小型飞机",
+      "confidence": 0.6875,
+      "bbox_xyxy": [
+        293.5,
+        60.375,
+        317.5,
+        82.625
+      ],
+      "bbox_xywh": [
+        293.5,
+        60.375,
+        24.0,
+        22.25
+      ],
+      "xyxy_norm": [
+        0.45859375,
+        0.11791992,
+        0.49609375,
+        0.16137695
+      ],
+      "area": 534.0,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0002",
+      "class_id": 1,
+      "class_name": "small_aircraft",
+      "label_cn": "小型飞机",
+      "confidence": 0.679688,
+      "bbox_xyxy": [
+        535.5,
+        138.812,
+        556.5,
+        153.688
+      ],
+      "bbox_xywh": [
+        535.5,
+        138.812,
+        21.0,
+        14.876
+      ],
+      "xyxy_norm": [
+        0.83671875,
+        0.27111719,
+        0.86953125,
+        0.30017187
+      ],
+      "area": 312.396,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0003",
+      "class_id": 1,
+      "class_name": "small_aircraft",
+      "label_cn": "小型飞机",
+      "confidence": 0.679199,
+      "bbox_xyxy": [
+        79.219,
+        194.0,
+        100.781,
+        208.5
+      ],
+      "bbox_xywh": [
+        79.219,
+        194.0,
+        21.562,
+        14.5
+      ],
+      "xyxy_norm": [
+        0.12377969,
+        0.37890625,
+        0.15747031,
+        0.40722656
+      ],
+      "area": 312.649,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0004",
+      "class_id": 1,
+      "class_name": "small_aircraft",
+      "label_cn": "小型飞机",
+      "confidence": 0.63623,
+      "bbox_xyxy": [
+        355.625,
+        54.25,
+        372.375,
+        70.25
+      ],
+      "bbox_xywh": [
+        355.625,
+        54.25,
+        16.75,
+        16.0
+      ],
+      "xyxy_norm": [
+        0.55566406,
+        0.10595703,
+        0.58183594,
+        0.13720703
+      ],
+      "area": 268.0,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    },
+    {
+      "track_id": "det_0005",
+      "class_id": 1,
+      "class_name": "small_aircraft",
+      "label_cn": "小型飞机",
+      "confidence": 0.604004,
+      "bbox_xyxy": [
+        362.625,
+        161.875,
+        378.375,
+        173.125
+      ],
+      "bbox_xywh": [
+        362.625,
+        161.875,
+        15.75,
+        11.25
+      ],
+      "xyxy_norm": [
+        0.56660156,
+        0.31616211,
+        0.59121094,
+        0.33813477
+      ],
+      "area": 177.188,
+      "source": "detections",
+      "branch": "single",
+      "notes": []
+    }
+  ],
+  "output_summary": {
+    "target_type_count": 1,
+    "target_total_count": 5,
+    "targets": [
+      {
+        "label": "small_aircraft",
+        "label_cn": "小型飞机",
+        "count": 5,
+        "max_confidence": 0.6875,
+        "mean_confidence": 0.657324,
+        "confidences": [
+          0.6875,
+          0.679688,
+          0.679199,
+          0.63623,
+          0.604004
+        ]
+      }
+    ],
+    "target_details": "小型飞机 5 个（置信度：0.69、0.68、0.68、0.64、0.60）",
+    "max_confidence": 0.6875,
+    "mean_confidence": 0.657324,
+    "description": "图像场景分类：天空。检测到 5 个目标，包含 1 类：小型飞机 5 个（置信度：0.69、0.68、0.68、0.64、0.60）。"
+  },
+  "consistency": {
+    "status": "consistent",
+    "target_counts": {
+      "small_aircraft": 5
+    },
+    "original_invalid_count": 0,
+    "final_invalid_count": 0,
+    "original_invalid": [],
+    "final_invalid": [],
+    "rule": "场景与目标类别按数据集真实组合做一致性检查；冲突会进入运行损失代理值。"
+  },
+  "decision": {
+    "detector_profile": "single_6class_air_focus",
+    "confidence_threshold": 0.25,
+    "priority_classes": [
+      "small_aircraft"
+    ],
+    "route": "single",
+    "route_reason": "single_detector_model",
+    "enhancement": "keep small high-contrast flying targets",
+    "expert_routing": {
+      "active_experts": [
+        "unknown_small_aircraft_expert",
+        "cross_modal_adapter"
+      ],
+      "adapter": "cross_modal_adapter",
+      "note": "部署侧记录专家选择建议；实际 NPU 推理由当前 OM 模型完成。"
+    },
+    "model_management": {
+      "edge_target": "Ascend 310B / 310B4",
+      "preferred_export": "ONNX -> ATC -> OM",
+      "load_strategy": "优先复用同尺寸同 SOC 的 .om 缓存文件。"
+    },
+    "description": "图像场景分类：天空。检测到 5 个目标，包含 1 类：小型飞机 5 个（置信度：0.69、0.68、0.68、0.64、0.60）。"
+  },
+  "losses": {
+    "type": "runtime_proxy",
+    "formula": "L = w_moti*L_moti + w_env*L_env + w_box*L_box + w_cls*L_cls + w_detail*L_detail + w_proto*L_proto",
+    "components": {
+      "L_moti": 0.66,
+      "L_env": 0.5625,
+      "L_box": 0.342676,
+      "L_cls": 0.342676,
+      "L_detail": 0.0,
+      "L_proto": 0.0
+    },
+    "weights": {
+      "modality": 0.3,
+      "scene": 0.6,
+      "box": 1.0,
+      "cls": 1.0,
+      "detail": 0.2,
+      "proto": 0.4
+    },
+    "total": 1.220852,
+    "note": "这是推理阶段的置信度/一致性代理损失；训练时仍以真实训练损失为准。"
+  },
+  "memory": {
+    "enabled": false,
+    "memory_path": ""
+  },
+  "warnings": [],
+  "stages": [
+    {
+      "name": "scene_classification",
+      "status": "inferred",
+      "seconds": 0.0,
+      "message": "unavailable",
+      "details": {
+        "scene": "uncertain",
+        "confidence": 0.25
+      }
+    },
+    {
+      "name": "target_detection",
+      "status": "ok",
+      "seconds": 0.562389,
+      "message": "5 target boxes",
+      "details": {
+        "route": "single",
+        "input_size": [
+          640,
+          640
+        ],
+        "output_count": 84000
+      }
+    },
+    {
+      "name": "scene_target_reasoning",
+      "status": "ok",
+      "seconds": 0.0,
+      "message": "scene-target consistency checked",
+      "details": {
+        "detection_count": 5
+      }
+    },
+    {
+      "name": "agent_report_formatting",
+      "status": "ok",
+      "seconds": 0.0,
+      "message": "Agent-compatible JSON and CSV output generated",
+      "details": {}
+    }
+  ],
+  "sparse_moe": {
+    "deployment_note": "若使用 class-il-yolo --sparse-moe 训练得到新 best.pt，请重新 export ONNX 后再由 ATC 转 OM。"
+  },
+  "source_prediction": {
+    "image": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/data/testdata/base_test_r1/176.png",
+    "image_size": [
+      640,
+      512
+    ],
+    "detector": {
+      "route": "single",
+      "route_reason": "single_detector_model",
+      "elapsed_ms": 562.389,
+      "model_elapsed_ms": 24.396,
+      "input_size": [
+        640,
+        640
+      ],
+      "decode_mode": "raw",
+      "output_count": 84000
+    },
+    "detections": [
+      {
+        "box": [
+          293.5,
+          60.375,
+          317.5,
+          82.625
+        ],
+        "bbox_xywh": [
+          293.5,
+          60.375,
+          24.0,
+          22.25
+        ],
+        "score": 0.6875,
+        "class_id": 1,
+        "class_name": "small_aircraft",
+        "branch": "single"
+      },
+      {
+        "box": [
+          535.5,
+          138.812,
+          556.5,
+          153.688
+        ],
+        "bbox_xywh": [
+          535.5,
+          138.812,
+          21.0,
+          14.875
+        ],
+        "score": 0.679688,
+        "class_id": 1,
+        "class_name": "small_aircraft",
+        "branch": "single"
+      },
+      {
+        "box": [
+          79.219,
+          194.0,
+          100.781,
+          208.5
+        ],
+        "bbox_xywh": [
+          79.219,
+          194.0,
+          21.562,
+          14.5
+        ],
+        "score": 0.679199,
+        "class_id": 1,
+        "class_name": "small_aircraft",
+        "branch": "single"
+      },
+      {
+        "box": [
+          355.625,
+          54.25,
+          372.375,
+          70.25
+        ],
+        "bbox_xywh": [
+          355.625,
+          54.25,
+          16.75,
+          16.0
+        ],
+        "score": 0.63623,
+        "class_id": 1,
+        "class_name": "small_aircraft",
+        "branch": "single"
+      },
+      {
+        "box": [
+          362.625,
+          161.875,
+          378.375,
+          173.125
+        ],
+        "bbox_xywh": [
+          362.625,
+          161.875,
+          15.75,
+          11.25
+        ],
+        "score": 0.604004,
+        "class_id": 1,
+        "class_name": "small_aircraft",
+        "branch": "single"
+      }
+    ]
+  }
+}

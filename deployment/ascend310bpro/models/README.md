@@ -21,6 +21,17 @@ yolo26n.pt
 Use `.pt` or `.yaml` for training. Use `.onnx` and `.om` only for export and
 NPU inference.
 
+The current TZB release-weight test entry expects these files:
+
+```text
+r1-four-class-detector-easy-640.pt
+class-il-er500-stage06-best.pt
+class-il-der500-stage06-best.pt
+```
+
+`run_release_weight_tzb_tests.sh` exports them to ONNX automatically on the
+board and then runs the required before/after tests.
+
 You may also keep the optional single six-class baseline in this directory:
 
 ```text

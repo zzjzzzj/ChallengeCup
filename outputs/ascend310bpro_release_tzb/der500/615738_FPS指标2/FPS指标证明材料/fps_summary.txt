@@ -1,0 +1,2 @@
+strategy der500
+fps 1.779

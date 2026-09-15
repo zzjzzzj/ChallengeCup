@@ -115,6 +115,17 @@ Matching OM files are cached by model name, size, and SOC, for example:
 Existing OM files are reused. Pass `--force-convert` only when you really want
 to rebuild them.
 
+If ATC fails with `np.float_ was removed in the NumPy 2.0 release`, it is a
+CANN/NumPy compatibility problem rather than a model-shape problem. If it fails
+with `No module named 'attr'`, the CANN `te/opc-tool` Python dependencies are
+incomplete. The scripts enable `deployment/ascend310bpro/atc_compat/sitecustomize.py`
+automatically for ATC subprocesses; if the board environment is still missing
+packages, run:
+
+```bash
+python3 -m pip install -r deployment/ascend310bpro/requirements-runtime.txt
+```
+
 After replacing any routed ONNX file, rebuild and verify the model manifest:
 
 ```bash
@@ -287,6 +298,21 @@ compute mAP/KRR/New-mAP unless labels or the official `evaluate_tzb.py` are
 provided.
 
 ## Stage 7: Test-Protocol Metrics
+
+For the current release weights, use:
+
+```bash
+bash deployment/ascend310bpro/run_release_weight_tzb_tests.sh \
+  --soc-version Ascend310B4 \
+  --team-id 作品编号 \
+  --no-save-images
+```
+
+This runs the required before/base and after/base/increment predictions twice:
+once with `class-il-er500-stage06-best.pt`, and once with
+`class-il-der500-stage06-best.pt`. The formatted `目标检测识别模块` directories
+contain normalized YOLO `class x_center y_center width height confidence` TXT
+files and can be passed to the official `evaluate_tzb.py`.
 
 After board inference, run `run_evaluate_tzb.sh` with a fixed base test set,
 fixed incremental test set, and three prediction files: before-increment on

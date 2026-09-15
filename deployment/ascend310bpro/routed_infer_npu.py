@@ -35,6 +35,7 @@ IMAGE_EXTENSIONS = {".bmp", ".jpeg", ".jpg", ".png", ".tif", ".tiff"}
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parents[1]
 DEFAULT_CONFIG = SCRIPT_DIR / "route_config.yaml"
+ATC_COMPAT_DIR = SCRIPT_DIR / "atc_compat"
 
 
 @dataclass
@@ -440,11 +441,32 @@ def convert_onnx_to_om(
         command.append("--precision_mode=%s" % precision_mode)
     print("[INFO] Convert ONNX to OM:", flush=True)
     print("[INFO] " + " ".join(command), flush=True)
-    subprocess.run(command, check=True)
+    try:
+        subprocess.run(command, check=True, env=atc_environment())
+    except subprocess.CalledProcessError:
+        print(
+            "[ERROR] ATC failed. Common Ascend CANN Python fixes: "
+            "python3 -m pip install \"numpy<2\" attrs tornado absl-py",
+            flush=True,
+        )
+        raise
     if not om_path.is_file():
         raise FileNotFoundError("ATC finished but OM was not found: %s" % om_path)
     print("[INFO] Created OM: %s" % om_path, flush=True)
     return om_path
+
+
+def atc_environment() -> Dict[str, str]:
+    env = os.environ.copy()
+    disabled = env.get("ASCEND310BPRO_DISABLE_ATC_NUMPY_COMPAT", "").lower()
+    if disabled in {"1", "true", "yes"}:
+        return env
+    if ATC_COMPAT_DIR.is_dir():
+        existing = env.get("PYTHONPATH")
+        compat = str(ATC_COMPAT_DIR)
+        env["PYTHONPATH"] = compat if not existing else compat + os.pathsep + existing
+        print("[INFO] ATC NumPy compatibility shim enabled: %s" % compat, flush=True)
+    return env
 
 
 def resolve_model_for_npu(
@@ -1279,11 +1301,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 "confidence": round(float(scene["confidence"]), 6),
                 "scores": [round(float(item), 6) for item in scene["scores"]],
                 "elapsed_ms": round(float(scene["elapsed_ms"]), 3),
+                "model_elapsed_ms": round(float(scene.get("model_elapsed_ms", scene["elapsed_ms"])), 3),
             },
             "detector": {
                 "route": str(scene["route"]),
                 "route_reason": str(scene["route_reason"]),
                 "elapsed_ms": round(float(detector_payload["elapsed_ms"]), 3),
+                "model_elapsed_ms": round(
+                    float(detector_payload.get("model_elapsed_ms", detector_payload["elapsed_ms"])),
+                    3,
+                ),
                 "input_size": detector_payload["input_size"],
                 "output_count": detector_payload["output_count"],
             },

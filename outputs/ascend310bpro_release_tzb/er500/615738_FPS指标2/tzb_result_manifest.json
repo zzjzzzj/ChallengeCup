@@ -1,0 +1,42 @@
+{
+  "team_id": "615738",
+  "strategy_label": "er500",
+  "output_dir": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/615738_FPS指标2",
+  "groups": {
+    "base_before": {
+      "folder": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/615738_FPS指标2/基础模型-基础测试集推理结果",
+      "target_module": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/615738_FPS指标2/基础模型-基础测试集推理结果/目标检测识别模块",
+      "scene_module": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/615738_FPS指标2/基础模型-基础测试集推理结果/场景认知模块",
+      "decision_module": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/615738_FPS指标2/基础模型-基础测试集推理结果/任务决策模块",
+      "images": 240,
+      "detections": 962
+    },
+    "base_after": {
+      "folder": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/615738_FPS指标2/增量模型-基础测试集推理结果",
+      "target_module": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/615738_FPS指标2/增量模型-基础测试集推理结果/目标检测识别模块",
+      "scene_module": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/615738_FPS指标2/增量模型-基础测试集推理结果/场景认知模块",
+      "decision_module": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/615738_FPS指标2/增量模型-基础测试集推理结果/任务决策模块",
+      "images": 240,
+      "detections": 785
+    },
+    "increment_after": {
+      "folder": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/615738_FPS指标2/增量模型-增量测试集推理结果",
+      "target_module": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/615738_FPS指标2/增量模型-增量测试集推理结果/目标检测识别模块",
+      "scene_module": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/615738_FPS指标2/增量模型-增量测试集推理结果/场景认知模块",
+      "decision_module": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/615738_FPS指标2/增量模型-增量测试集推理结果/任务决策模块",
+      "images": 270,
+      "detections": 1074
+    }
+  },
+  "source_predictions": {
+    "base_before": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/base_before/predictions.jsonl",
+    "base_after": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/base_after/predictions.jsonl",
+    "increment_after": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/increment_after/predictions.jsonl"
+  },
+  "fps": 1.751,
+  "evidence": {
+    "base_before_summary": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/615738_FPS指标2/FPS指标证明材料/base_before_summary.json",
+    "base_after_summary": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/615738_FPS指标2/FPS指标证明材料/base_after_summary.json",
+    "increment_after_summary": "/home/HwHiAiUser/Desktop/workspace/ChallengeCup/outputs/ascend310bpro_release_tzb/er500/615738_FPS指标2/FPS指标证明材料/increment_after_summary.json"
+  }
+}
